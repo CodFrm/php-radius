@@ -1,22 +1,193 @@
 <?php
 
-//创建Server对象，监听 127.0.0.1:9501端口
-$serv = new swoole_server("0.0.0.0", 9501);
+class radius {
+    /**
+     * @var swoole_server
+     */
+    public $server;
 
-//监听连接进入事件
-$serv->on('connect', function ($serv, $fd) {
-    echo "Client: Connect.\n";
-});
+    /**
+     * 密钥
+     * @var string
+     */
+    public $secret_key;
 
-//监听数据接收事件
-$serv->on('receive', function ($serv, $fd, $from_id, $data) {
-    $serv->send($fd, "Server: ".$data);
-});
+    public static $ATTR_TYPE = [
+        1 => 'User-Name', 2 => 'User-Password', 3 => 'CHAP-Password', 4 => 'NAS-IP-Address', 5 => 'NAS-Port',
+        6 => 'Service-Type', 7 => 'Framed-Protocol', 8 => 'Framed-IP-Address', 9 => 'Framed-IP-Netmask',
+        10 => 'Framed-Routing', 11 => 'Filter-Id', 12 => 'Framed-MTU', 13 => 'Framed-Compression',
+        14 => 'Login-IP-Host', 15 => 'Login-Service', 16 => 'Login-TCP-Port', 17 => '(unassigned)',
+        18 => 'Reply-Message', 19 => 'Callback-Number', 20 => 'Callback-Id', 21 => '(unassigned)',
+        22 => 'Framed-Route', 23 => 'Framed-IPX-Network', 24 => 'State', 25 => 'Class', 26 => 'Vendor-Specific',
+        27 => 'Session-Timeout', 28 => 'Idle-Timeout', 29 => 'Termination-Action', 30 => 'Called-Station-Id',
+        31 => 'Calling-Station-Id', 32 => 'NAS-Identifier', 33 => 'Proxy-State', 34 => 'Login-LAT-Service',
+        35 => 'Login-LAT-Node', 36 => 'Login-LAT-Group', 37 => 'Framed-AppleTalk-Link',
+        38 => 'Framed-AppleTalk-Network', 39 => 'Framed-AppleTalk-Zone', 40 => 'Acct-Status-Type',
+        41 => 'Acct-Delay-Time', 42 => 'Acct-Input-Octets', 43 => 'Acct-Output-Octets', 44 => 'Acct-Session-Id',
+        45 => 'Acct-Authentic', 46 => 'Acct-Session-Time', 47 => 'Acct-Input-Packets', 48 => 'Acct-Output-Packets',
+        49 => 'Acct-Terminate-Cause', 50 => 'Acct-Multi-Session-Id', 51 => 'Acct-Link-Count',
+        60 => 'CHAP-Challenge', 61 => 'NAS-Port-Type', 62 => 'Port-Limit', 63 => 'Login-LAT-Port'];
 
-//监听连接关闭事件
-$serv->on('close', function ($serv, $fd) {
-    echo "Client: Close.\n";
-});
+    /**
+     * 收到udp数据包
+     * @param swoole_server $serv
+     * @param string $data
+     * @param array $clientInfo
+     */
+    public function onPacket(swoole_server $serv, string $data, array $clientInfo) {
+        $attr = [];
+        $struct = $this->unpack($data, $attr);
+        $serv->sendto($clientInfo['address'], $clientInfo['port'],
+            $this->pack(3, $struct['identifier'], $struct['authenticator'])
+        );
+        return;
+    }
 
-//启动服务器
-$serv->start();
+    /**
+     * 对chap密码验证正确性
+     * @param string $bin
+     * @param string $pwd
+     * @return bool
+     */
+    public function verify_chap_passwd(string $bin, string $pwd, string $chap): bool {
+        if (strlen($bin) != 17) return false;
+        $chapid = $bin[0];
+        $string = substr($bin, 1);
+        return md5($chapid . $pwd . $chap, true) == $string;
+    }
+
+    /**
+     * 解码pap密码
+     * @param string $bin
+     * @param string $Authenticator
+     * @return string
+     */
+    public function decode_pap_passwd(string $bin, string $Authenticator): string {
+        $passwd = '';
+        $S = $this->secret_key;
+        $len = strlen($bin);
+        //b1 = MD5(S + RA)
+        $hash_b = md5($S . $Authenticator, true);
+        for ($offset = 0; $offset < $len; $offset += 16) {
+            //每次拿16字符进行解码
+            for ($i = 0; $i < 16; $i++) {
+                $pi = ord($bin[$offset + $i]);
+                $bi = ord($hash_b[$i]);
+                //c(i) = pi xor bi
+                $chr = chr($pi ^ $bi);
+                if ($chr == "\x0") {
+                    //文本标志\x0结尾
+                    return $passwd;
+                }
+                $passwd .= $chr;
+            }
+            //判断一下是不是已经结束了,然后返回
+            if ($len == $offset + 16) {
+                return $passwd;
+            }
+            //bi = MD5(S + c(i-1))
+            $hash_b = md5($S . substr($bin, $offset, 16), true);
+        }
+        //都循环完了,还没看见结束,返回空
+        return '';
+    }
+
+    /**
+     * 封包
+     * @param int $code
+     * @param int $identifier
+     * @param string $reqAuthenticator
+     * @param array $attr
+     * @return string
+     */
+    public function pack(int $code, int $identifier, string $reqAuthenticator, array $attr = []): string {
+        $attr_bin = '';
+        foreach ($attr as $key => $value) {
+            $attr_bin .= $this->pack_attr($key, $value);
+        }
+        $len = 20 + strlen($attr_bin);
+        //MD5(Code+ID+Length+RequestAuth+Attributes+Secret)
+        $send = pack('ccna16',
+                $code, $identifier, $len,
+                md5($code . $identifier . $len . $reqAuthenticator . $attr_bin . $this->secret_key, true)
+            ) . $attr_bin;
+        return $send;
+    }
+
+    /**
+     * 封包属性
+     * @param  $code
+     * @param string $data
+     * @return string
+     */
+    public function pack_attr($code, string $data): string {
+        return pack('cc', $code, 2 + strlen($data)) . $data;
+    }
+
+    /**
+     * 解码radius数据包
+     * @param string $bin
+     * @param array $attr
+     * @return array|bool
+     */
+    public function unpack(string $bin, array &$attr): array {
+        //一个正常的radius封包长度是绝对大于等于20的
+        if (strlen($bin) < 20) {
+            return [];
+        }
+        //解包
+        $radius = unpack('ccode/cidentifier/nlength/a16authenticator', $bin);
+        //获取后面的属性长度,并且对数据包进行验证
+        if (strlen($bin) != $radius['length']) {
+            return [];
+        }
+        $attr_len = $radius['length'] - 20;
+        //处理得到后面的Attributes,并且解包
+        $attr = $this->unpack_attr(substr($bin, 20, $attr_len));
+        if ($attr == []) {
+            return [];
+        }
+        return $radius;
+    }
+
+    /**
+     * 处理Attributes
+     * @param string $bin
+     * @return array
+     */
+    public function unpack_attr(string $bin): array {
+        $attr = [];
+        $offset = 0;
+        $len = strlen($bin);
+        while ($offset < $len) {
+            $attr_type = ord($bin[$offset]);//属性类型
+            $attr_len = ord($bin[$offset + 1]);//属性长度
+            $attr[static::$ATTR_TYPE[$attr_type]] = substr($bin, $offset + 2, $attr_len - 2);//属性值
+            //跳到下一个
+            $offset += $attr_len;
+        }
+        //判断offset和$len是否相等,不相等认为无效,抛弃这个封包
+        if ($offset != $len) {
+            return [];
+        }
+        return $attr;
+    }
+
+
+    /**
+     * 运行服务器
+     * @param int $authPort
+     * @param int $accountPort
+     */
+    public function run(string $secret_key, int $authPort = 1812, int $accountPort = 1813) {
+        $server = new swoole_server("0.0.0.0", $authPort, SWOOLE_PROCESS, SWOOLE_SOCK_UDP);
+        $server->on('Packet', array($this, 'onPacket'));
+        $this->server = $server;
+        $this->secret_key = $secret_key;
+        //服务器启动,线程堵塞...
+        $server->start();
+    }
+}
+
+$server = new radius();
+$server->run('test123');
