@@ -10,7 +10,7 @@ use HuanL\Request\Request;
 
 class ViewController extends Controller {
 
-    protected $namespaceUrl = '/';
+    protected $namespaceUrl = '';
     /**
      * @var Request
      */
@@ -35,6 +35,9 @@ class ViewController extends Controller {
     }
 
     public function _url($action) {
-        return $this->request->home() . (Route::name($action) ?: $this->namespaceUrl . $action);
+        if ($action) {
+            return $this->request->home() . (Route::name($action) ?: $this->namespaceUrl . '/' . $action);
+        }
+        return $this->request->home() . $this->namespaceUrl;
     }
 }
