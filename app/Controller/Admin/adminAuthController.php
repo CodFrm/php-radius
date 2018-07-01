@@ -9,11 +9,12 @@ use HuanL\Routing\Route;
 
 class adminAuthController extends ViewController {
 
-    protected $namespaceUrl = '/Admin';
+    protected $namespaceUrl = '/admin';
 
     public $menu = [
         '首页' => ['url' => '', 'icon' => 'home'],
         '用户管理' => ['url' => 'user', 'icon' => 'user'],
+        '服务器管理' => ['url' => 'server', 'icon' => 'server'],
         '设置' => ['url' => 'setting', 'icon' => 'shezhi']
     ];
 

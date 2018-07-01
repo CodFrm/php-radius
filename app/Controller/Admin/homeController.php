@@ -23,5 +23,8 @@ class homeController extends adminAuthController {
         return $this->view();
     }
 
+    public function server() {
+        return $this->view();
+    }
 
 }
