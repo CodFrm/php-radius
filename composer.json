@@ -30,11 +30,5 @@
       "Tests\\": "tests/"
     }
   },
-  "minimum-stability": "dev",
-  "repositories": {
-    "packagist": {
-      "type": "composer",
-      "url": "https://packagist.org"
-    }
-  }
+  "minimum-stability": "dev"
 }

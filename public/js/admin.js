@@ -81,14 +81,14 @@
 /******/
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = "./src/admin.js");
+/******/ 	return __webpack_require__(__webpack_require__.s = "./src/Admin.js");
 /******/ })
 /************************************************************************/
 /******/ ({
 
 /***/ "./node_modules/_css-loader@0.28.11@css-loader/index.js!./src/css/admin.css":
 /*!*************************************************************************!*\
-  !*** ./node_modules/_css-loader@0.28.11@css-loader!./src/css/admin.css ***!
+  !*** ./node_modules/_css-loader@0.28.11@css-loader!./src/css/Admin.css ***!
   \*************************************************************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
@@ -685,12 +685,12 @@ module.exports = function (css) {
 
 /***/ "./src/admin.js":
 /*!**********************!*\
-  !*** ./src/admin.js ***!
+  !*** ./src/Admin.js ***!
   \**********************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
-__webpack_require__(/*! ./css/admin.css */ "./src/css/admin.css");
+__webpack_require__(/*! ./css/Admin.css */ "./src/css/Admin.css");
 
 $(function () {
     $('.nav-left>.nav-item>.nav-ic').click(function () {
@@ -705,13 +705,13 @@ $(function () {
 
 /***/ "./src/css/admin.css":
 /*!***************************!*\
-  !*** ./src/css/admin.css ***!
+  !*** ./src/css/Admin.css ***!
   \***************************/
 /*! no static exports found */
 /***/ (function(module, exports, __webpack_require__) {
 
 
-var content = __webpack_require__(/*! !../../node_modules/_css-loader@0.28.11@css-loader!./admin.css */ "./node_modules/_css-loader@0.28.11@css-loader/index.js!./src/css/admin.css");
+var content = __webpack_require__(/*! !../../node_modules/_css-loader@0.28.11@css-loader!./Admin.css */ "./node_modules/_css-loader@0.28.11@css-loader/index.js!./src/css/Admin.css");
 
 if(typeof content === 'string') content = [[module.i, content, '']];
 

@@ -9,7 +9,7 @@ use HuanL\Routing\Route;
 
 class adminAuthController extends ViewController {
 
-    protected $namespaceUrl = '/admin';
+    protected $namespaceUrl = '/Admin';
 
     public $menu = [
         '首页' => ['url' => '', 'icon' => 'home'],
@@ -19,7 +19,7 @@ class adminAuthController extends ViewController {
 
     public function echoMenu($menu, &$active = false) {
         $ret = '';
-        foreach ($menu as $key => $item) {
+            foreach ($menu as $key => $item) {
             if ($item == 'br') {
                 $ret .= '<div class="nav-item br"></div>';
             } else if (is_array($item['url'])) {

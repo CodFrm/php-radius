@@ -32,5 +32,11 @@ return [
          */
         'dbconnect' => \HuanL\Db\Driver\MySQL\MySQLDBConnect::class,
         'db' => \HuanL\Db\SQLDb::class
+    ],
+    /**
+     * 一些目录的配置
+     */
+    'dir' => [
+        'controller' => "Controller"
     ]
 ];
