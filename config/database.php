@@ -3,8 +3,8 @@
 return [
     'user' => 'root',
     'passwd' => '',
-    'prefix' => 'cb_',
-    'db' => 'tmp',
+    'prefix' => 'pr_',
+    'db' => 'php-radius',
     'param' => [
         'charset' => 'utf8'
     ]

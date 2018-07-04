@@ -16,6 +16,7 @@ return [
      * 初始启动组件
      */
     'component' => [
+        \HuanL\Core\Components\DataBaseComponent::class
     ],
 
     /**

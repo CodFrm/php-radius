@@ -5,9 +5,15 @@ namespace App\Controller\Admin;
 
 
 use App\Controller\ViewController;
+use HuanL\Request\Request;
 use HuanL\Routing\Route;
 
 class adminAuthController extends ViewController {
+
+    public function __construct(Request $request) {
+        parent::__construct($request);
+
+    }
 
     protected $namespaceUrl = '/admin';
 

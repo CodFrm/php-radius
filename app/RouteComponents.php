@@ -21,6 +21,7 @@ class RouteComponents extends \HuanL\Core\Components\RouteComponents {
 
     public function cacheRoute() {
         //缓存的路由,可以吧需要缓存的路由写在这里
+        Route::get('/admin/{controller}/{action}')->setNamespace('App\Controller\Admin');
         Route::get('/admin/{action}', 'homeController')->setNamespace('App\Controller\Admin');
         Route::get('/{controller}/{action}')->setNamespace('App\Controller');
     }
