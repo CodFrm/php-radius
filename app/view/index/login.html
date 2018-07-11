@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>PHPRadius</title>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+</head>
+
+<body>
+<div class="logo">PHP-Radius</div>
+<div class="middle-login">
+    <div class="form-post"><span class="top-title">用户登录</span>
+        <div class="input-group"><input class="input" id="user" type="text" name="username" placeholder="请输入你的账号或者邮箱">
+        </div>
+        <div class="input-group"><input class="input" id="passwd" type="password" name="username" placeholder="请输入你的密码">
+        </div>
+        <div class="input-group">
+            <button id="login" class="btn-submit input">登录</button>
+        </div>
+        <div class="input-group">
+            <button id="reg" class="btn-submit input" style="background: #545654;">注册</button>
+        </div>
+        <div class="input-group" style="text-align: right;margin: 4px;">
+            <a href="#" class="link">忘记密码?</a>
+        </div>
+    </div>
+</div>
+{:_js('login.js')}
+</body>
+<script>
+    $(function () {
+        $('#login').click(function () {
+            var btn = this;
+            $(btn).attr('disabled', true);
+            $.ajax({
+                url: "{:_url('indexController@postLogin')}",
+                method:'post',
+                data: {user: $('#user').val(), passwd: $('#passwd').val()},
+                success: function () {
+
+                },
+                complete: function () {
+                    $(btn).attr('disabled', false);
+                }
+            });
+        });
+        $('#reg').click(function(){
+            location.href="{:_url('register')}";
+        });
+    })
+</script>
+</html>

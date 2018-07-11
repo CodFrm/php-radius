@@ -8,6 +8,11 @@ return [
     'debug' => true,
 
     /**
+     * 网页编码
+     */
+    'charset' => 'utf-8',
+
+    /**
      * 应用路径,默认值 app/
      */
     'application' => 'app/',
