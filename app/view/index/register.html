@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>PHPRadius</title>
+    <link rel="stylesheet" href="http://at.alicdn.com/t/font_722334_eytpkh8il2.css">
     <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
 </head>
 
@@ -14,16 +15,16 @@
 <div class="middle-login">
     <div class="form-post"><span class="top-title">用户登录</span>
         <div class="input-group">
-            <input class="input" id="user" type="text" name="username" placeholder="请输入你的账号或者邮箱">
+            <input class="input" id="user" type="text" name="username" placeholder="请输入你想注册的账号">
         </div>
         <div class="input-group">
-            <input class="input" id="passwd" type="password" name="username" placeholder="请输入你的密码">
+            <input class="input" id="passwd" type="password" name="passwd" placeholder="请输入你的密码">
         </div>
         <div class="input-group">
-            <input class="input" id="again" type="password" name="username" placeholder="请再输入一次密码">
+            <input class="input" id="confirm" type="password" name="confirm" placeholder="请再输入一次密码">
         </div>
         <div class="input-group">
-            <input class="input" id="email" type="password" name="username" placeholder="请输入你的邮箱">
+            <input class="input" id="email" type="text" name="email" placeholder="请输入你的邮箱">
         </div>
         <div class="input-group">
             <button id="reg" class="btn-submit input" style="background: #545654;">注册</button>
@@ -36,6 +37,7 @@
         </div>
     </div>
 </div>
+{:_js('admin.js')}
 {:_js('login.js')}
 </body>
 <script>
@@ -44,7 +46,32 @@
             location.href = "{:_url('login')}";
         });
         $('#reg').click(function () {
-
+            var btn = this;
+            $(btn).attr('disabled', true);
+            $.ajax({
+                url: "{:_url('indexController@postRegister')}",
+                method: 'post',
+                data: {
+                    user: $('#user').val(),
+                    passwd: $('#passwd').val(),
+                    confirm: $('#confirm').val(),
+                    email: $('#email').val()
+                },
+                success: function (obj) {
+                    var pop = new popWind();
+                    if (obj.code == 0) {
+                        pop.prompt('注册成功,3秒后跳转到登录页面', 'prompt', '#51ec90');
+                        setTimeout(function () {
+                            location.href = "{:_url('login')}";
+                        }, 3000);
+                    } else {
+                        pop.prompt(obj.msg, 'prompt', 'red');
+                    }
+                },
+                complete: function () {
+                    $(btn).attr('disabled', false);
+                }
+            });
         });
     })
 </script>

@@ -8,14 +8,13 @@ use HuanL\Core\App\Model\DbModel;
 
 class UserModel extends DbModel {
 
-    protected $table = 'users';
+    const table = 'users';
 
-    protected $primaryKey = 'uid';
+    const primaryKey = 'uid';
 
     public function __construct() {
-        parent::__construct('users');
+        parent::__construct();
     }
-
 
     /**
      * 注册账号,返回uid,0为注册失败
@@ -23,17 +22,20 @@ class UserModel extends DbModel {
      * @param $passwd
      * @return int
      */
-    public function register(string $user, string $passwd): int {
+    public function register(RegisterVerifyModel $registerVerifyModel): int {
         if ($this->db()->insert([
-                'username' => $user,
-                'passwd' => 'null'
+                'user' => $registerVerifyModel->user,
+                'passwd' => 'null',
+                'email' => $registerVerifyModel->email
             ]) <= 0) {
             return 0;
         }
         $lastId = $this->db()->lastId();
-        $this->db()->where(['uid' => $lastId])->update([
-            'passwd' => hash('sha256', $lastId . $user . $passwd)
-        ]);
+        if (!$this->db()->where(['uid' => $lastId])->update([
+            'passwd' => hash('sha256', $lastId . $registerVerifyModel->user . $registerVerifyModel->passwd)
+        ])) {
+            return 0;
+        }
         return $lastId;
     }
 
