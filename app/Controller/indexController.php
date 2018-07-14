@@ -36,6 +36,11 @@ class indexController extends ViewController {
     public function postLogin() {
         $loginVerify = new LoginVerifyModel($_POST);
         if ($loginVerify->__check()) {
+            $user = new UserModel();
+            if ($msg = $user->login($loginVerify)) {
+                return new ErrorCode(-1, $msg);
+            }
+
             return new ErrorCode(0);
         }
         return new ErrorCode(-1, $loginVerify->getLastError());

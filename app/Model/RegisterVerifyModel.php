@@ -1,10 +1,4 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: codef
- * Date: 2018/7/12
- * Time: 14:21
- */
 
 namespace App\Model;
 
@@ -16,7 +10,7 @@ class RegisterVerifyModel extends VerifyModel {
     /**
      * @verify empty 用户名不能为空
      * @verify length 2,10 用户名不符合规则(2-10个字符)
-     * @verify regex /^[\w]+$/ 用户名格式不正确
+     * @verify regex /^(?=.*[a-zA-Z])[\w]+$/ 用户名格式不正确,必须包含一个字母
      * @verify func user
      * @var string
      */

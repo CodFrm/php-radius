@@ -44,7 +44,7 @@
                 success: function (obj) {
                     var pop = new popWind();
                     if (obj.code == 0) {
-                        pop.prompt('注册成功,3秒后跳转到管理页面', 'prompt', '#51ec90');
+                        pop.prompt('登录成功,3秒后跳转到管理页面', 'prompt', '#51ec90');
                         setTimeout(function () {
                             location.href = "{:_url('login')}";
                         }, 3000);
