@@ -34,10 +34,10 @@ class ViewController extends Controller {
         return '<script type="text/javascript" src="' . $this->request->home() . '/js/' . $file . '"></script>';
     }
 
-    public function _url($action) {
+    public function _url($action,$http=false) {
         if ($action) {
-            return $this->request->home() . (Route::name($action) ?: $this->namespaceUrl . '/' . $action);
+            return $this->request->home($http) . (Route::name($action) ?: $this->namespaceUrl . '/' . $action);
         }
-        return $this->request->home() . $this->namespaceUrl;
+        return $this->request->home($http) . $this->namespaceUrl;
     }
 }

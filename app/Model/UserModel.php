@@ -8,9 +8,9 @@ use HuanL\Core\App\Model\DbModel;
 
 class UserModel extends DbModel {
 
-    const table = 'users';
+    public const table = 'users';
 
-    const primaryKey = 'uid';
+    public const primaryKey = 'uid';
 
     public function __construct() {
         parent::__construct();
@@ -43,7 +43,7 @@ class UserModel extends DbModel {
      * @param LoginVerifyModel $loginVerifyModel
      * @return string
      */
-    public function login(LoginVerifyModel $loginVerifyModel): string {
+    public function login(LoginVerifyModel $loginVerifyModel, &$row = []): string {
         $row = $this->db()->where(['user' => $loginVerifyModel->user])->_or()->where(['uid' => $loginVerifyModel->user])->find();
         if ($row) {
             if ($this->passwdEncode($row['uid'], $row['user'], $loginVerifyModel->passwd) == $row['passwd']) {

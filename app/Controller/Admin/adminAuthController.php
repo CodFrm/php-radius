@@ -4,15 +4,16 @@
 namespace App\Controller\Admin;
 
 
-use App\Controller\ViewController;
+use App\Controller\AuthController;
+use App\Model\TokenModel;
 use HuanL\Request\Request;
-use HuanL\Routing\Route;
+use HuanL\Request\Response;
 
-class adminAuthController extends ViewController {
+class adminAuthController extends AuthController {
+
 
     public function __construct(Request $request) {
         parent::__construct($request);
-
     }
 
     protected $namespaceUrl = '/admin';
@@ -26,7 +27,7 @@ class adminAuthController extends ViewController {
 
     public function echoMenu($menu, &$active = false) {
         $ret = '';
-            foreach ($menu as $key => $item) {
+        foreach ($menu as $key => $item) {
             if ($item == 'br') {
                 $ret .= '<div class="nav-item br"></div>';
             } else if (is_array($item['url'])) {
