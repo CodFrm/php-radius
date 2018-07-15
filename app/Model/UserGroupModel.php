@@ -26,7 +26,10 @@ class UserGroupModel extends DbModel {
      */
     public function getUserGroup(int $uid): array {
         $groups = [];
-        $record = $this->db()->where(['uid' => $uid])->where('expire', '>', time())->select();
+        $record = $this->db()->where(['uid' => $uid])->where([
+            ['expire', '>', time()],
+            ['expire', '=', '-1', 'or']
+        ])->select();
         while ($row = $record->fetch()) {
             $groups[] = $row;
         }

@@ -28,3 +28,4 @@ class GroupModel extends DbModel {
         return self::exist($group_id);
     }
 }
+

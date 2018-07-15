@@ -5,12 +5,13 @@ namespace App\Controller\Admin;
 
 
 use App\Controller\AuthController;
-use App\Model\TokenModel;
 use HuanL\Request\Request;
-use HuanL\Request\Response;
 
 class adminAuthController extends AuthController {
 
+    protected const authIdList = [];
+
+    protected const controllerAuthId = 1;
 
     public function __construct(Request $request) {
         parent::__construct($request);
