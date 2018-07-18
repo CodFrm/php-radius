@@ -27,5 +27,18 @@ class GroupModel extends DbModel {
     public function getGroupAuth(int $group_id): array {
         return self::exist($group_id);
     }
+
+    /**
+     * 获取用户组列表
+     * @return array
+     */
+    public function getGroupList() {
+        $record = $this->db()->select();
+        $rows = [];
+        while ($row = $record->fetch()) {
+            $rows[] = $row;
+        }
+        return $rows;
+    }
 }
 

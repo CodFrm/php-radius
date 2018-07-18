@@ -1,18 +1,39 @@
-{include '/../public/header'}
-
-<div class="content">
-    <div class="card card-half">
-        <div class="card-content">
-            <div class="card-header">头</div>
-            <div class="card-text">内容,瞎稽儿打</div>
-        </div>
-    </div>
-    <div class="card card-half">
-        <div class="card-content">
-            <div class="card-header">头</div>
-            <div class="card-text">内容,瞎稽儿打</div>
-        </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>PHPRadius</title>
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_722334_b40d0sil3qt.css">
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+</head>
+<body>
+<div class="header">
+    <div class="mobile-menu iconfont icon-caidan"></div>
+    <div class="logo"><a href="#" class="logo-text">PHPRadius</a></div>
+    <div class="top-user">
+        <div class="nav-user">farmer <i class="iconfont icon-down"></i></div>
     </div>
 </div>
-
-{include '/../public/footer'}
+<div id="app">
+    <div class="nav-left">
+        <router-link to="/" active-class="active" class="nav-item" exact>
+            <div class="nav-ic"><i class="iconfont icon-home"></i> 首页</div>
+        </router-link>
+        <router-link to="/user" active-class="active" class="nav-item">
+            <div class="nav-ic"><i class="iconfont icon-user"></i> 用户管理</div>
+        </router-link>
+        <router-link to="/server" active-class="active" class="nav-item">
+            <div class="nav-ic"><i class="iconfont icon-server"></i> 服务器管理</div>
+        </router-link>
+        <router-link to="/setting" active-class="active" class="nav-item">
+            <div class="nav-ic"><i class="iconfont icon-shezhi"></i> 设置</div>
+        </router-link>
+    </div>
+    <router-view></router-view>
+</div>
+<div class="footer"></div>
+<script type="text/javascript" src="js/admin.js"></script>
+</body>
+</html>

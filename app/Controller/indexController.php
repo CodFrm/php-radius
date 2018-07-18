@@ -42,14 +42,14 @@ class indexController extends ViewController {
                 return new ErrorCode(-1, $msg);
             }
             $tokenModel = new TokenModel();
-            $tokenModel->deleteToken($row['uid'], TokenModel::LOGIN);
+            $tokenModel->deleteToken($row['uid'], TokenModel::LOGIN, 604800);
             Db::begin();
             $token = $tokenModel->genToken($row['uid'], TokenModel::LOGIN);
             Db::commit();
             $res = new ErrorCode(0);
-            $res->cookie('uid', $row['uid']);
-            $res->cookie('user', $row['user']);
-            $res->cookie('token', $token);
+            $res->cookie('uid', $row['uid'], 604800);
+            $res->cookie('user', $row['user'], 604800);
+            $res->cookie('token', $token, 604800);
             return $res;
         }
         return new ErrorCode(-1, $loginVerify->getLastError());
