@@ -4,6 +4,7 @@
 namespace App\Controller\Admin;
 
 use App\ErrorCode;
+use App\Model\Admin\AddUserGroupVerifyModel;
 use App\Model\GroupModel;
 use App\Model\UserGroupModel;
 use App\Model\UserModel;
@@ -17,6 +18,9 @@ class apiController extends adminAuthController {
     public function __construct(Request $request) {
         parent::__construct($request);
         $this->apiField = '';
+        if (empty($_POST)) {
+            $_POST = $this->request->post();
+        }
     }
 
     private function user() {
@@ -24,13 +28,13 @@ class apiController extends adminAuthController {
     }
 
     /**
-     * @api
-     * @func 获取用户列表
-     * @url admin/api/user
-     * @method get
-     * @param int 页码:page default:1 翻页的页码
-     * @demo admin/api/user?page=2 get {"code":0,"msg":"success","rows":[{"uid":"1","user":"farmer","email":"code.farmer@qq.com","reg_time":"1531792947","last_login_time":"1531792947"}],"total":1}
-     * @return array
+     * @api get admin/api/user
+     * @apiName 用户列表
+     * @apiDescription 获取用户基本信息列表
+     * @apiParam int 页码:page default:1 翻页的页码
+     * @apiReqdemo admin/api/user?page=1 get
+     * @apiResdemo json {"code":0,"msg":"success","rows":[{"uid":"1","user":"farmer","email":"code.farmer@qq.com","reg_time":"1531792947","last_login_time":"1531792947"}],"total":1}
+     * @apiReturn json
      */
     public function getUser() {
         $page = $_GET['page'] ?? 1;
@@ -41,18 +45,43 @@ class apiController extends adminAuthController {
         return ['code' => 0, 'msg' => 'success', 'rows' => $rows, 'total' => $total];
     }
 
+    /**
+     * @api
+     * @func 增加新用户
+     * @url admin/api/user
+     * @method post
+     * @return array
+     */
+    public function postUser() {
+        print_r($_POST);
+    }
+
+
+    /**
+     * @api
+     * @func 修改用户信息
+     * @url admin/api/user
+     * @method put
+     * @return array
+     */
+    public function putUser() {
+
+    }
+
     private function userGroup() {
         return 'error action';
     }
 
     /**
-     * @api
-     * @func 获取用户组列表
-     * @url admin/api/usergroup
-     * @method get
-     * @param int 用户id:uid default:null 如果为null,则将返回全部的用户组,有用户id则返回用户存在的uid
-     * @demo admin/api/usergroup get
-     * @return array
+     * @api get admin/api/usergroup
+     * @apiName 用户组列表
+     * @apiDescription 获取用户组列表,如果提交用户uid可以获取该用户的用户组
+     * @apiParam int 用户id:uid default:null 如果为null,则将返回全部的用户组,有用户id则返回用户存在的uid
+     * @apiReqdemo admin/api/usergroup get
+     * @apiResdemo json {"code":0,"msg":"success","rows":[{"group_id":"1","name":"管理员","auth_id":"1,2","description":"管理员,拥有至高的权限"},{"group_id":"2","name":"普通用户","auth_id":"2","description":"底层愚民"}]}
+     * @apiReqdemo admin/api/usergroup?uid=1 get
+     * @apiResdemo json {"code":0,"msg":"success","rows":[{"uid":"1","group_id":"1","time":"0","expire":"-1"},{"uid":"1","group_id":"2","time":"0","expire":"1535977639"}]}
+     * @apiReturn json
      */
     public function getUserGroup() {
         $rows = [];
@@ -68,4 +97,56 @@ class apiController extends adminAuthController {
         return new ErrorCode(0, 'success', ['rows' => $rows]);
     }
 
+    /**
+     * @api post admin/api/usergroup
+     * @apiDescription 给用户添加/更新用户组
+     * @apiBody int 用户id:uid 用户uid
+     * @apiBody int 用户组id:gid 用户组id
+     * @APIBody int 老用户组id:before default:0 之前的用户组id,为空则为新增
+     * @apiSuccessDemo
+     * @apiReqdemo admin/api/usergroup post {"uid":1,"gid":"2"}
+     * @apiResdemo json
+     * @apiErrorDemo
+     * @apiReqdemo admin/api/usergroup post {"uid":-1,"gid":"2"}
+     * @apiResdemo json {"code":-1,"msg":"用户uid不能为空"}
+     * @apiReturn json
+     */
+    public function postUserGroup() {
+        $vmodel = new AddUserGroupVerifyModel($_POST);
+        if ($vmodel->__check() === true) {
+            $umodel = new UserGroupModel();
+            if ($vmodel->type() == 'update') {
+                //存在更新时间
+                $umodel->updateUserGroup($vmodel);
+            } else {
+                //不存在,插入一条新的
+                $umodel->addUserGroup($vmodel);
+            }
+            return new ErrorCode(0);
+        }
+        return new ErrorCode(-1, $vmodel->getLastError());
+    }
+
+    /**
+     * @api delete admin/api/usergroup
+     * @apiDescription 删除用户的用户组
+     * @apiBody int 用户id:uid 用户uid
+     * @apiBody int 用户组:gid 用户组id
+     * @apiSuccessDemo
+     * @apiReqdemo admin/api/usergroup delete
+     * @apiResdemo json
+     * @apiErrorDemo
+     * @apiReqdemo admin/api/usergroup delete
+     * @apiResdemo json
+     * @apiReturn json
+     */
+    public function deleteUserGroup() {
+        $vmodel = new AddUserGroupVerifyModel($_POST);
+        if ($vmodel->__check() === true) {
+            $umodel = new UserGroupModel();
+            $umodel->deleteUserGroup($vmodel);
+            return new ErrorCode(0);
+        }
+        return new ErrorCode(-1, $vmodel->getLastError());
+    }
 }

@@ -25,7 +25,7 @@ class GroupModel extends DbModel {
      * @return array
      */
     public function getGroupAuth(int $group_id): array {
-        return self::exist($group_id);
+        return $this->db()->where('group_id', $group_id)->find();
     }
 
     /**
