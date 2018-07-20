@@ -5,10 +5,12 @@ namespace App\Controller\Admin;
 
 use App\ErrorCode;
 use App\Model\Admin\AddUserGroupVerifyModel;
+use App\Model\Admin\AddUserVerifyModel;
 use App\Model\GroupModel;
 use App\Model\UserGroupModel;
 use App\Model\UserModel;
 use HuanL\Core\App\Controller\ApiController as RestfulController;
+use HuanL\Core\Facade\Db;
 use HuanL\Request\Request;
 
 class apiController extends adminAuthController {
@@ -36,7 +38,7 @@ class apiController extends adminAuthController {
      * @apiResdemo json {"code":0,"msg":"success","rows":[{"uid":"1","user":"farmer","email":"code.farmer@qq.com","reg_time":"1531792947","last_login_time":"1531792947"}],"total":1}
      * @apiReturn json
      */
-    public function getUser() {
+    public function getUser(): array {
         $page = $_GET['page'] ?? 1;
         $users = new UserModel();
         $users->db();
@@ -50,10 +52,28 @@ class apiController extends adminAuthController {
      * @func 增加新用户
      * @url admin/api/user
      * @method post
-     * @return array
+     * @return ErrorCode
      */
-    public function postUser() {
-        print_r($_POST);
+    public function postUser(): ErrorCode {
+        $vmodel = new AddUserVerifyModel($_POST);
+        if ($vmodel->__check()) {
+            $umodel = new UserModel();
+            Db::begin();
+            if (!($uid = $umodel->addNewUser($vmodel))) {
+                return new ErrorCode(-1, '添加失败');
+            }
+            $ugmodel = new UserGroupModel();
+            foreach ($vmodel->group as $item) {
+                $ugmodel->addUserGroup(new AddUserGroupVerifyModel([
+                    'gid' => $item['group_id'],
+                    'uid' => $uid,
+                    'expire' => $item['expire']
+                ]));
+            }
+            Db::commit();
+            return new ErrorCode(0);
+        }
+        return new ErrorCode(-1, $vmodel->getLastError());
     }
 
 

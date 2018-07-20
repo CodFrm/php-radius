@@ -1,11 +1,22 @@
 <?php
+/**
+ *============================
+ * author:Farmer
+ * time:2018/7/20 16:19
+ * blog:blog.icodef.com
+ * function:
+ *============================
+ */
 
-namespace App\Model;
+
+namespace App\Model\Admin;
 
 
+use App\Model\GroupModel;
+use App\Model\UserModel;
 use HuanL\Core\App\Model\VerifyModel;
 
-class RegisterVerifyModel extends VerifyModel {
+class AddUserVerifyModel extends VerifyModel {
 
     /**
      * @verify empty 用户名不能为空
@@ -25,13 +36,6 @@ class RegisterVerifyModel extends VerifyModel {
     public $passwd;
 
     /**
-     * @verify empty 第二次密码不能为空
-     * @verify equal :passwd 两次输入的密码不同
-     * @var string
-     */
-    public $confirm;
-
-    /**
      * @verify empty 邮箱不能为空
      * @verify length 3,32 邮箱长度错误(3-16个字符)
      * @verify regex /^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/ 邮箱格式错误
@@ -40,6 +44,32 @@ class RegisterVerifyModel extends VerifyModel {
      */
     public $email;
 
+    /**
+     * @verify empty 用户组不能为空
+     * @verify func group
+     * @var array
+     */
+    public $group;
+
+
+    public function group($group) {
+        if (is_array($group)) {
+            $tmp = [];
+            foreach ($group as $item) {
+                if (isset($item['expire']) && isset($item['group_id'])) {
+                    if (!GroupModel::exist($item['group_id'])) {
+                        return '有不存在的用户组';
+                    }
+                } else {
+                    return '用户组格式错误';
+                }
+                $tmp['gid_' . $item['group_id']] = (isset($tmp['gid_' . $item['group_id']]) ? $tmp['gid_' . $item['group_id']] : 0) + 1;
+                if ($tmp['gid_' . $item['group_id']] > 1) return '错误的用户组格式';
+            }
+            return true;
+        }
+        return '用户组需要是一个数组';
+    }
 
     public function user($user) {
         if (UserModel::exist(['user' => $user])) {

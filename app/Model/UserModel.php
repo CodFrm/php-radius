@@ -4,6 +4,7 @@
 namespace App\Model;
 
 
+use App\Model\Admin\AddUserVerifyModel;
 use HuanL\Core\App\Model\DbModel;
 
 class UserModel extends DbModel {
@@ -25,7 +26,8 @@ class UserModel extends DbModel {
         if ($this->db()->insert([
                 'user' => $registerVerifyModel->user,
                 'passwd' => 'null',
-                'email' => $registerVerifyModel->email
+                'email' => $registerVerifyModel->email,
+                'reg_time' => time()
             ]) <= 0) {
             return 0;
         }
@@ -47,6 +49,7 @@ class UserModel extends DbModel {
         $row = $this->db()->where(['user' => $loginVerifyModel->user])->_or()->where(['uid' => $loginVerifyModel->user])->find();
         if ($row) {
             if ($this->passwdEncode($row['uid'], $row['user'], $loginVerifyModel->passwd) == $row['passwd']) {
+                $this->db()->where(['uid' => $row['uid']])->update(['last_login_time' => time()]);
                 return '';
             }
             return '密码错误';
@@ -65,4 +68,16 @@ class UserModel extends DbModel {
         return hash('sha256', $uid . $user . $passwd);
     }
 
+    /**
+     * 添加新用户,添加成功返回uid
+     * @param AddUserVerifyModel $addUserVerifyModel
+     * @return int
+     */
+    public function addNewUser(AddUserVerifyModel $addUserVerifyModel): int {
+        $register = new RegisterVerifyModel();
+        $register->user = $addUserVerifyModel->user;
+        $register->passwd = $addUserVerifyModel->passwd;
+        $register->email = $addUserVerifyModel->email;
+        return $this->register($register);
+    }
 }
