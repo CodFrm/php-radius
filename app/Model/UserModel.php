@@ -5,6 +5,7 @@ namespace App\Model;
 
 
 use App\Model\Admin\AddUserVerifyModel;
+use App\Model\Admin\UpdateUserVerifyModel;
 use HuanL\Core\App\Model\DbModel;
 
 class UserModel extends DbModel {
@@ -79,5 +80,35 @@ class UserModel extends DbModel {
         $register->passwd = $addUserVerifyModel->passwd;
         $register->email = $addUserVerifyModel->email;
         return $this->register($register);
+    }
+
+    /**
+     * 更新用户
+     * @param UpdateUserVerifyModel $updateUserVerifyModel
+     * @return int
+     */
+    public function updateUser(UpdateUserVerifyModel $updateUserVerifyModel): int {
+        $data = [
+            'email' => $updateUserVerifyModel->email
+        ];
+        if (!empty($updateUserVerifyModel->passwd)) {
+            $data['passwd'] = $this->passwdEncode($updateUserVerifyModel->uid, $updateUserVerifyModel->user['user'], $updateUserVerifyModel->passwd);
+        }
+        return $this->db()->where('uid', $updateUserVerifyModel->uid)->update($data);
+    }
+
+    /**
+     * 修改用户状态
+     * @param int $uid
+     * @param int $status
+     * @return int
+     */
+    public function updateStatus(int $uid, int $status): int {
+        if (!in_array($status, [0, 1])) {
+            return 0;
+        }
+        return $this->db()->where('uid', $uid)->update(
+            ['status' => $status]
+        );
     }
 }

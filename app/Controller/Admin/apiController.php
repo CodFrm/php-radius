@@ -6,6 +6,7 @@ namespace App\Controller\Admin;
 use App\ErrorCode;
 use App\Model\Admin\AddUserGroupVerifyModel;
 use App\Model\Admin\AddUserVerifyModel;
+use App\Model\Admin\UpdateUserVerifyModel;
 use App\Model\GroupModel;
 use App\Model\UserGroupModel;
 use App\Model\UserModel;
@@ -43,7 +44,7 @@ class apiController extends adminAuthController {
         $users = new UserModel();
         $users->db();
         $total = 0;
-        $rows = $users->pagination($page, ['uid', 'user', 'email', 'reg_time', 'last_login_time'], 20, $total);
+        $rows = $users->pagination($page, ['uid', 'status', 'user', 'email', 'reg_time', 'last_login_time'], 20, $total);
         return ['code' => 0, 'msg' => 'success', 'rows' => $rows, 'total' => $total];
     }
 
@@ -82,10 +83,34 @@ class apiController extends adminAuthController {
      * @func 修改用户信息
      * @url admin/api/user
      * @method put
-     * @return array
+     * @return ErrorCode
      */
     public function putUser() {
+        $vmodel = new UpdateUserVerifyModel($_POST);
+        if ($vmodel->__check()) {
+            $umodel = new UserModel();
+            Db::begin();
+            $umodel->updateUser($vmodel);
+            Db::commit();
+            return new ErrorCode(0);
+        }
+        return new ErrorCode(-1, $vmodel->getLastError());
+    }
 
+    /**
+     * @api
+     * @func 禁封/解封用户
+     * @url admin/api/user
+     * @method delete
+     * @return ErrorCode
+     */
+    public function deleteUser() {
+        if (isset($_POST['uid']) && isset($_POST['status'])) {
+            $umodel = new UserModel();
+            $umodel->updateStatus($_POST['uid'], $_POST['status']);
+            return new ErrorCode(0);
+        }
+        return new ErrorCode(-1, '缺少必要参数');
     }
 
     private function userGroup() {

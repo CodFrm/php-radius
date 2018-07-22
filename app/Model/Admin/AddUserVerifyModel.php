@@ -74,7 +74,7 @@ class AddUserVerifyModel extends VerifyModel {
     public function user($user) {
         if (UserModel::exist(['user' => $user])) {
             //有重名
-            return '注册失败,该用户名已经被注册';
+            return '添加失败,该用户名已经被注册';
         }
         //无重名
         return true;
@@ -83,7 +83,7 @@ class AddUserVerifyModel extends VerifyModel {
     public function email($email) {
         if (UserModel::exist(['email' => $email])) {
             //有重名
-            return '注册失败,该邮箱已经被注册';
+            return '添加失败,该邮箱已经被注册';
         }
         //无重名
         return true;
