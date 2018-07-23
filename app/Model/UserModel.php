@@ -47,7 +47,9 @@ class UserModel extends DbModel {
      * @return string
      */
     public function login(LoginVerifyModel $loginVerifyModel, &$row = []): string {
-        $row = $this->db()->where(['user' => $loginVerifyModel->user])->_or()->where(['uid' => $loginVerifyModel->user])->find();
+        $row = $this->db()->where(['user' => $loginVerifyModel->user])->_or()
+            ->where(['email' => $loginVerifyModel->user])->_or()->where(['uid' => $loginVerifyModel->user])
+            ->find();
         if ($row) {
             if ($this->passwdEncode($row['uid'], $row['user'], $loginVerifyModel->passwd) == $row['passwd']) {
                 $this->db()->where(['uid' => $row['uid']])->update(['last_login_time' => time()]);

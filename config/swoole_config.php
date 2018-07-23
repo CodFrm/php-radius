@@ -15,9 +15,13 @@ return [
     'account_port' => 1813,
     'db' => [
         'host' => '192.168.1.10',
-        'port'=>3306,
-        'database' => 'php-radius',
         'user' => 'root',
-        'password' => ''
+        'passwd' => '',
+        'prefix' => 'pr_',
+        'db' => 'php-radius',
+        'port' => 3306,
+        'param' => [
+            'charset' => 'utf8'
+        ]
     ]
 ];
