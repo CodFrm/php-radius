@@ -85,6 +85,7 @@ class radius {
     public function onPacket(swoole_server $serv, string $data, array $clientInfo) {
         $attr = [];
         $struct = $this->unpack($data, $attr);
+        $this->log('连接进入...');
         if (!(isset($struct['code']) && isset($struct['identifier']) && isset($struct['authenticator']))) {
             return;
         }
@@ -116,9 +117,10 @@ class radius {
                 }
         }
         //接收到了信息,从数据库验证账号信息,需要判断密码是什么类型
-        $serv->sendto($clientInfo['address'], $clientInfo['port'],
-            $this->pack($code, $struct['identifier'], $struct['authenticator'])
-        );
+        print_r($clientInfo);
+        var_dump($serv->sendto($clientInfo['address'], $clientInfo['port'],
+            $this->pack($code, $struct['identifier'], $struct['authenticator']), $clientInfo['server_socket']
+        ));
         return;
     }
 
@@ -221,7 +223,8 @@ class radius {
         //MD5(Code+ID+Length+RequestAuth+Attributes+Secret)
         $send = pack('ccna16',
                 $code, $identifier, $len,
-                md5($code . $identifier . $len . $reqAuthenticator . $attr_bin . $this->secret_key, true)
+                md5(chr($code) . chr($identifier) . pack('n', $len) .
+                    $reqAuthenticator . $attr_bin . $this->secret_key, true)
             ) . $attr_bin;
         return $send;
     }
@@ -292,7 +295,8 @@ class radius {
      * @param int $accountPort
      */
     public function run() {
-        $server = new swoole_server("0.0.0.0", $this->config['auth_port'], SWOOLE_BASE, SWOOLE_SOCK_UDP);
+        $server = new swoole_server('0.0.0.0', $this->config['auth_port'], SWOOLE_BASE, SWOOLE_SOCK_UDP);
+        $server->addListener('0.0.0.0', $this->config['account_port'], SWOOLE_SOCK_UDP);
         $server->on('Packet', array($this, 'onPacket'));
         $this->server = $server;
         $this->secret_key = $this->config['secret'];
