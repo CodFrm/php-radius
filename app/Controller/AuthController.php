@@ -58,20 +58,25 @@ class AuthController extends ViewController {
         /** @var UserGroupModel $userAuthModel */
         $userAuthModel = app(UserGroupModel::class);
         $groups = $userAuthModel->getUserGroup($this->uid);
+        $success = static::auth($this->nowAuthId, $groups);
+        if (!$success) {
+            die('没有权限');
+        }
+    }
+
+    public static function auth($authId, $groups) {
         /** @var GroupModel $groupModel */
         $groupModel = app(GroupModel::class);
         $flag = false;
         foreach ($groups as $item) {
             $groupAuth = $groupModel->getGroupAuth($item['group_id']);
             $groupAuths = explode(',', $groupAuth['auth_id']);
-            if (in_array($this->nowAuthId, $groupAuths)) {
+            if (in_array($authId, $groupAuths)) {
                 $flag = true;
                 break;
             }
         }
-        if (!$flag) {
-            die('没有权限');
-        }
+        return $flag;
     }
 
     /**

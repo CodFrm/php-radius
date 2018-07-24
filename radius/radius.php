@@ -11,7 +11,9 @@
 
 namespace Radius;
 
+use App\Controller\AuthController;
 use App\Model\LoginVerifyModel;
+use App\Model\UserGroupModel;
 use App\Model\UserModel;
 use HuanL\Db\Driver\MySQL\MySQLDBConnect;
 use HuanL\Db\SQLDb;
@@ -41,6 +43,10 @@ class radius {
      */
     public $dbConnect = null;
 
+    /**
+     * 权限id
+     */
+    public const authId = 3;
 
     public function __construct(string $path) {
         $configPath = $path . '/config/swoole_config.php';
@@ -102,13 +108,14 @@ class radius {
             case 4:
                 {
                     //Accounting-Request 计费请求
-                    $this->log("Access-Request 认证请求");
+                    $this->log("Accounting-Request 计费请求");
 
                     break;
                 }
             case 5:
                 {
                     //Accounting-Response
+                    $this->log("Accounting-Response 结束计费");
                     break;
                 }
             default:
@@ -117,10 +124,9 @@ class radius {
                 }
         }
         //接收到了信息,从数据库验证账号信息,需要判断密码是什么类型
-        print_r($clientInfo);
-        var_dump($serv->sendto($clientInfo['address'], $clientInfo['port'],
+        $serv->sendto($clientInfo['address'], $clientInfo['port'],
             $this->pack($code, $struct['identifier'], $struct['authenticator']), $clientInfo['server_socket']
-        ));
+        );
         return;
     }
 
@@ -142,8 +148,14 @@ class radius {
                 $vmodel = new LoginVerifyModel(['user' => $attr[static::$ATTR_TYPE[1]], 'passwd' => $passwd]);
                 if ($vmodel->__check()) {
                     $umodel = new UserModel();
-                    if ($umodel->login($vmodel) == '') {
-                        return 2;
+                    if ($umodel->login($vmodel, $row) == '') {
+                        //对权限进行验证
+                        $ugmodel = new UserGroupModel();
+                        $success = AuthController::auth(static::authId, $ugmodel->getUserGroup($row['uid']));
+                        if ($success) {
+                            return 2;
+                        }
+                        return 3;
                     }
                 }
                 return 3;
