@@ -33,4 +33,22 @@ class ServerModel extends DbModel {
         return static::update_o($serverModel, ['server_id' => $serverModel->server_id], ['server_id']);
     }
 
+    /**
+     * 修改服务器状态
+     * @param int $server_id
+     * @param int $status
+     * @return int
+     */
+    public function updateServerState(int $server_id, int $status): int {
+        return $this->db()->where('server_id', $server_id)->update(['status' => $status]);
+    }
+
+    /**
+     * 删除服务器
+     * @param int $server_id
+     * @return int
+     */
+    public function deleteServerState(int $server_id): int {
+        return $this->db()->where('server_id', $server_id)->delete();
+    }
 }

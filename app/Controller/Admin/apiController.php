@@ -211,7 +211,7 @@ class apiController extends adminAuthController {
 
     public function getServer(ServerModel $userModel, $page = 1) {
         $page = $page ?? 1;
-        $userModel->db();
+        $userModel->db()->where('status in (0,1)');
         $total = 0;
         $rows = $userModel->pagination($page, ['server_id', 'name', 'ip', 'config', 'secret', 'status'], 20, $total);
         return ['code' => 0, 'msg' => 'success', 'rows' => $rows, 'total' => $total];
@@ -237,5 +237,32 @@ class apiController extends adminAuthController {
             return new ErrorCode(-1, '未知错误');
         }
         return new ErrorCode(-1, $updateServerModel->getLastError());
+    }
+
+    public function deleteServer(ServerModel $serverModel) {
+        if (!isset($_POST['server_id'])) {
+            return 'error action';
+        }
+        switch ($_GET['type'] ?? 0) {
+            case 1:
+                {
+                    if ($serverModel->updateServerState($_POST['server_id'], $_POST['status'] ?? 0)) {
+                        return new ErrorCode(0);
+                    }
+                    break;
+                }
+            case 2:
+                {
+                    if ($serverModel->updateServerState($_POST['server_id'], 2)) {
+                        return new ErrorCode(0);
+                    }
+                    break;
+                }
+            default:
+                {
+                    return 'error action';
+                }
+        }
+        return new ErrorCode(-1, '系统错误');
     }
 }
