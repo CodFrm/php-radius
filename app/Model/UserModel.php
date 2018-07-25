@@ -7,6 +7,8 @@ namespace App\Model;
 use App\Model\Admin\AddUserVerifyModel;
 use App\Model\Admin\UpdateUserVerifyModel;
 use HuanL\Core\App\Model\DbModel;
+use HuanL\Core\Facade\Db;
+use HuanL\Request\Request;
 
 class UserModel extends DbModel {
 
@@ -24,10 +26,13 @@ class UserModel extends DbModel {
      * @return int
      */
     public function register(RegisterVerifyModel $registerVerifyModel): int {
+        /** @var Request $req */
+        $req = app(Request::class);
         if ($this->db()->insert([
                 'user' => $registerVerifyModel->user,
                 'passwd' => 'null',
                 'email' => $registerVerifyModel->email,
+                'reg_ip' => $req->getip(),
                 'reg_time' => time()
             ]) <= 0) {
             return 0;
@@ -53,6 +58,7 @@ class UserModel extends DbModel {
         if ($row) {
             if ($this->passwdEncode($row['uid'], $row['user'], $loginVerifyModel->passwd) == $row['passwd']) {
                 $this->db()->where(['uid' => $row['uid']])->update(['last_login_time' => time()]);
+                $this->cacheValue = $row;
                 return '';
             }
             return '密码错误';
@@ -112,5 +118,28 @@ class UserModel extends DbModel {
         return $this->db()->where('uid', $uid)->update(
             ['status' => $status]
         );
+    }
+
+    /**
+     * 获取用户状态
+     * @param int $uid
+     * @return int
+     */
+    public function getUserState(int $uid): int {
+        $row = $this->db()->where('uid', $uid)->find();
+        if ($row) {
+            return $row['status'];
+        }
+        return -1;
+    }
+
+    /**
+     * 获取ip最后一个注册的
+     * @param $ip
+     * @return array|bool
+     */
+    public static function getIpLastReg($ip) {
+        $row = Db::table(static::table)->where('reg_ip', $ip)->order('reg_time')->find();
+        return $row;
     }
 }

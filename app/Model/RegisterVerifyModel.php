@@ -4,6 +4,8 @@ namespace App\Model;
 
 
 use HuanL\Core\App\Model\VerifyModel;
+use HuanL\Db\Db;
+use HuanL\Request\Request;
 
 class RegisterVerifyModel extends VerifyModel {
 
@@ -46,7 +48,14 @@ class RegisterVerifyModel extends VerifyModel {
             //有重名
             return '注册失败,该用户名已经被注册';
         }
-        //无重名
+        //无重名,校验ip
+        /** @var Request $req */
+        $req = app(Request::class);
+        if ($row = UserModel::getIpLastReg($req->getip())) {
+            if ($row['reg_time'] + 3600 > time()) {
+                return '注册时间间隔过短';
+            }
+        }
         return true;
     }
 

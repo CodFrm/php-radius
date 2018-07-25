@@ -12,16 +12,5 @@
 return [
     'secret' => 'test123',
     'auth_port' => 1812,
-    'account_port' => 1813,
-    'db' => [
-        'host' => '192.168.1.10',
-        'user' => 'root',
-        'passwd' => '',
-        'prefix' => 'pr_',
-        'db' => 'php-radius',
-        'port' => 3306,
-        'param' => [
-            'charset' => 'utf8'
-        ]
-    ]
+    'account_port' => 1813
 ];

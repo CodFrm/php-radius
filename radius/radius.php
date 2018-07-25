@@ -38,12 +38,6 @@ class radius {
     public $config = [];
 
     /**
-     * 数据库连接对象
-     * @var MySQLDBConnect
-     */
-    public $dbConnect = null;
-
-    /**
      * 权限id
      */
     public const authId = 3;
@@ -51,19 +45,6 @@ class radius {
     public function __construct(string $path) {
         $configPath = $path . '/config/swoole_config.php';
         $this->config = include $configPath;
-        $this->dbConnect = new MySQLDBConnect($this->config['db']['user'],
-            $this->config['db']['passwd'], $this->config['db']['db']
-            , $this->config['db']['prefix'], $this->config['db']['host'], $this->config['db']['port'], $this->config['db']['param']
-        );
-    }
-
-    /**
-     * 获取一个数据库操作实例
-     * @return SQLDb
-     */
-    public function Db($table, $alias = '') {
-        $db = new SQLDb($this->dbConnect);
-        return $db->table($table, $alias);
     }
 
     public static $ATTR_TYPE = [
@@ -91,7 +72,6 @@ class radius {
     public function onPacket(swoole_server $serv, string $data, array $clientInfo) {
         $attr = [];
         $struct = $this->unpack($data, $attr);
-        $this->log('连接进入...');
         if (!(isset($struct['code']) && isset($struct['identifier']) && isset($struct['authenticator']))) {
             return;
         }
@@ -102,20 +82,13 @@ class radius {
                     //Access-Request 接收到请求,需要处理账号密码信息,然后返回
                     $this->log("Access-Request 认证请求");
                     $code = $this->authUser($attr, $struct['authenticator']);
-                    $this->log("Access-Request Req:code:$code");
                     break;
                 }
             case 4:
                 {
                     //Accounting-Request 计费请求
                     $this->log("Accounting-Request 计费请求");
-
-                    break;
-                }
-            case 5:
-                {
-                    //Accounting-Response
-                    $this->log("Accounting-Response 结束计费");
+                    $code = $this->account($attr);
                     break;
                 }
             default:
@@ -123,11 +96,33 @@ class radius {
                     return;
                 }
         }
+        $this->log("Req code:$code");
         //接收到了信息,从数据库验证账号信息,需要判断密码是什么类型
         $serv->sendto($clientInfo['address'], $clientInfo['port'],
             $this->pack($code, $struct['identifier'], $struct['authenticator']), $clientInfo['server_socket']
         );
         return;
+    }
+
+
+    public function account(array $attr): int {
+        if (isset($attr['Acct-Status-Type'])) {
+            $atype = unpack('Nast', $attr['Acct-Status-Type']);
+            switch ($atype['ast']) {
+                case 1:
+                    {
+                        //开始计费,在数据库中加入记录
+                        return 5;
+                        break;
+                    }
+                case 2:
+                    {
+                        //结束计费
+                        break;
+                    }
+            }
+        }
+        return 3;
     }
 
     public function log($msg) {
@@ -140,15 +135,19 @@ class radius {
      * @return int
      */
     public function authUser(array $attr, $Authenticator): int {
-        if (isset($attr[static::$ATTR_TYPE[1]])) {
+        if (isset($attr['User-Name'])) {
             //有账号密码
-            if (isset($attr[static::$ATTR_TYPE[2]])) {
+            if (isset($attr['User-Password'])) {
                 //User-Password
-                $passwd = $this->decode_pap_passwd($attr[static::$ATTR_TYPE[2]], $Authenticator);
-                $vmodel = new LoginVerifyModel(['user' => $attr[static::$ATTR_TYPE[1]], 'passwd' => $passwd]);
+                $passwd = $this->decode_pap_passwd($attr['User-Password'], $Authenticator);
+                $vmodel = new LoginVerifyModel(['user' => $attr['User-Name'], 'passwd' => $passwd]);
                 if ($vmodel->__check()) {
                     $umodel = new UserModel();
                     if ($umodel->login($vmodel, $row) == '') {
+                        if ($row['status'] != 0) {
+                            //非正常状态
+                            return 3;
+                        }
                         //对权限进行验证
                         $ugmodel = new UserGroupModel();
                         $success = AuthController::auth(static::authId, $ugmodel->getUserGroup($row['uid']));
@@ -159,7 +158,7 @@ class radius {
                     }
                 }
                 return 3;
-            } else if (isset($attr[static::$ATTR_TYPE[3]])) {
+            } else if (isset($attr['CHAP-Password'])) {
                 //CHAP-Password,密码必须明文储存,暂时放着,需要支持Access-Challeng
                 return 3;
             } else {
@@ -289,7 +288,11 @@ class radius {
         while ($offset < $len) {
             $attr_type = ord($bin[$offset]);//属性类型
             $attr_len = ord($bin[$offset + 1]);//属性长度
-            $attr[static::$ATTR_TYPE[$attr_type]] = substr($bin, $offset + 2, $attr_len - 2);//属性值
+            if (isset(static::$ATTR_TYPE[$attr_type])) {
+                $attr[static::$ATTR_TYPE[$attr_type]] = substr($bin, $offset + 2, $attr_len - 2);//属性值
+            } else {
+                $this->log("未知的属性:$attr_type 值:" . substr($bin, $offset + 2, $attr_len - 2));
+            }
             //跳到下一个
             $offset += $attr_len;
         }

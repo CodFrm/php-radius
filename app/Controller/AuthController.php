@@ -15,6 +15,7 @@ namespace App\Controller;
 use App\Model\GroupModel;
 use App\Model\TokenModel;
 use App\Model\UserGroupModel;
+use App\Model\UserModel;
 use HuanL\Request\Request;
 use HuanL\Request\Response;
 
@@ -44,7 +45,6 @@ class AuthController extends ViewController {
      */
     protected const authIdList = [];
 
-
     public function __construct(Request $request) {
         parent::__construct($request);
         $this->uid = $_COOKIE['uid'] ?? 0;
@@ -54,9 +54,14 @@ class AuthController extends ViewController {
             $res->redirection($this->request->home(true) . '/login');
             die('not login');
         }
+        /** @var UserModel $umodel */
+        $umodel = new UserModel();
+        if ($umodel->getUserState($this->uid) != 0) {
+            die('账号被封');
+        }
         $this->nowAuthId = static::authIdList[$this->action] ?? static::controllerAuthId;
         /** @var UserGroupModel $userAuthModel */
-        $userAuthModel = app(UserGroupModel::class);
+        $userAuthModel = new UserGroupModel();
         $groups = $userAuthModel->getUserGroup($this->uid);
         $success = static::auth($this->nowAuthId, $groups);
         if (!$success) {
@@ -66,7 +71,7 @@ class AuthController extends ViewController {
 
     public static function auth($authId, $groups) {
         /** @var GroupModel $groupModel */
-        $groupModel = app(GroupModel::class);
+        $groupModel = new GroupModel();
         $flag = false;
         foreach ($groups as $item) {
             $groupAuth = $groupModel->getGroupAuth($item['group_id']);
@@ -82,12 +87,11 @@ class AuthController extends ViewController {
     /**
      * 判断是否登录
      * @return bool
-     * @throws \HuanL\Container\InstantiationException
      */
     public function isLogin(): bool {
         $token = $_COOKIE['token'] ?? '';
         /** @var TokenModel $tokenModel */
-        $tokenModel = app(TokenModel::class);
+        $tokenModel = new TokenModel();
         return $tokenModel->verifyToken($token, $this->uid, TokenModel::LOGIN, 604800, true);
     }
 

@@ -8,8 +8,12 @@ use App\Model\Admin\AddUserGroupVerifyModel;
 use App\Model\Admin\AddUserVerifyModel;
 use App\Model\Admin\UpdateUserVerifyModel;
 use App\Model\GroupModel;
+use App\Model\ServerModel;
 use App\Model\UserGroupModel;
 use App\Model\UserModel;
+use App\Model\Verify\AddServerModel;
+use App\Model\Verify\UpdateServerModel;
+use Grpc\Server;
 use HuanL\Core\App\Controller\ApiController as RestfulController;
 use HuanL\Core\Facade\Db;
 use HuanL\Request\Request;
@@ -44,6 +48,12 @@ class apiController extends adminAuthController {
         $users = new UserModel();
         $users->db();
         $total = 0;
+        if (isset($_GET['keyword']) && !empty($_GET['keyword'])) {
+            $users->db->where('uid', $_GET['keyword'])
+                ->_or()->where('user', $_GET['keyword'])
+                ->_or()->where('email', $_GET['keyword'])
+                ->_or()->where('reg_ip', $_GET['keyword']);
+        }
         $rows = $users->pagination($page, ['uid', 'status', 'user', 'email', 'reg_time', 'last_login_time'], 20, $total);
         return ['code' => 0, 'msg' => 'success', 'rows' => $rows, 'total' => $total];
     }
@@ -193,5 +203,39 @@ class apiController extends adminAuthController {
             return new ErrorCode(0);
         }
         return new ErrorCode(-1, $vmodel->getLastError());
+    }
+
+    private function server() {
+        return 'error action';
+    }
+
+    public function getServer(ServerModel $userModel, $page = 1) {
+        $page = $page ?? 1;
+        $userModel->db();
+        $total = 0;
+        $rows = $userModel->pagination($page, ['server_id', 'name', 'ip', 'config', 'secret', 'status'], 20, $total);
+        return ['code' => 0, 'msg' => 'success', 'rows' => $rows, 'total' => $total];
+    }
+
+    public function postServer(AddServerModel $addServerModel, ServerModel $serverModel) {
+        $addServerModel->setCheckData($_POST);
+        if ($addServerModel->__check()) {
+            if ($serverModel->addServer($addServerModel)) {
+                return new ErrorCode(0);
+            }
+            return new ErrorCode(-1, '未知错误');
+        }
+        return new ErrorCode(-1, $addServerModel->getLastError());
+    }
+
+    public function putServer(UpdateServerModel $updateServerModel, ServerModel $serverModel) {
+        $updateServerModel->setCheckData($_POST);
+        if ($updateServerModel->__check()) {
+            if ($serverModel->updateServer($updateServerModel)) {
+                return new ErrorCode(0);
+            }
+            return new ErrorCode(-1, '未知错误');
+        }
+        return new ErrorCode(-1, $updateServerModel->getLastError());
     }
 }
