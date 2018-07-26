@@ -12,7 +12,9 @@
 namespace Radius;
 
 use App\Controller\AuthController;
+use App\Model\AccountModel;
 use App\Model\LoginVerifyModel;
+use App\Model\ServerModel;
 use App\Model\UserGroupModel;
 use App\Model\UserModel;
 use HuanL\Db\Driver\MySQL\MySQLDBConnect;
@@ -26,12 +28,6 @@ class radius {
     public $server;
 
     /**
-     * 密钥
-     * @var string
-     */
-    public $secret_key;
-
-    /**
      * 配置
      * @var array
      */
@@ -41,6 +37,12 @@ class radius {
      * 权限id
      */
     public const authId = 3;
+
+    /**
+     * 服务器缓存
+     * @var array
+     */
+//    public $serverCache = [];
 
     public function __construct(string $path) {
         $configPath = $path . '/config/swoole_config.php';
@@ -64,6 +66,18 @@ class radius {
         60 => 'CHAP-Challenge', 61 => 'NAS-Port-Type', 62 => 'Port-Limit', 63 => 'Login-LAT-Port'];
 
     /**
+     * 二进制转换为ip字符串
+     * @param string $bin
+     * @return string
+     */
+    public static function bin2ip(string $bin): string {
+        return ord(substr($bin, 0, 1)) . '.' .
+            ord(substr($bin, 1, 1)) . '.' .
+            ord(substr($bin, 2, 1)) . '.' .
+            ord(substr($bin, 3, 1));
+    }
+
+    /**
      * 收到udp数据包
      * @param swoole_server $serv
      * @param string $data
@@ -76,35 +90,82 @@ class radius {
             return;
         }
         $code = 0;
-        switch ($struct['code']) {
-            case 1:
-                {
-                    //Access-Request 接收到请求,需要处理账号密码信息,然后返回
-                    $this->log("Access-Request 认证请求");
-                    $code = $this->authUser($attr, $struct['authenticator']);
-                    break;
-                }
-            case 4:
-                {
-                    //Accounting-Request 计费请求
-                    $this->log("Accounting-Request 计费请求");
-                    $code = $this->account($attr);
-                    break;
-                }
-            default:
-                {
-                    return;
-                }
+        $secret = '';
+        $server = [];
+        print_r($attr);
+        if ($this->verifyServer($attr, $clientInfo['address'], $secret, $server)) {
+            switch ($struct['code']) {
+                case 1:
+                    {
+                        //Access-Request 接收到请求,需要处理账号密码信息,然后返回
+                        $this->log("Access-Request 认证请求", $clientInfo);
+                        $code = $this->authUser($secret, $attr, $struct['authenticator'], $server);
+                        break;
+                    }
+                case 4:
+                    {
+                        //Accounting-Request 计费请求
+                        $this->log("Accounting-Request 计费请求", $clientInfo);
+                        $code = $this->account($attr);
+                        break;
+                    }
+                default:
+                    {
+                        $this->log('错误请求', $clientInfo);
+                        return;
+                    }
+            }
+            $this->log("Req code:$code", $clientInfo);
+        } else {
+            $code = 3;
+            $this->log("服务器验证未通过", $clientInfo);
         }
-        $this->log("Req code:$code");
-        //接收到了信息,从数据库验证账号信息,需要判断密码是什么类型
         $serv->sendto($clientInfo['address'], $clientInfo['port'],
-            $this->pack($code, $struct['identifier'], $struct['authenticator']), $clientInfo['server_socket']
+            $this->pack($secret, $code, $struct['identifier'], $struct['authenticator']), $clientInfo['server_socket']
         );
         return;
     }
 
+    /**
+     * 验证服务器是否正确/可用
+     * @param array $attr
+     * @param string $sourceIp
+     * @param string $secret
+     * @return bool
+     */
+    public function verifyServer(array $attr, string $sourceIp, string &$secret, array $server = []): bool {
+        if (!(isset($attr['NAS-IP-Address']) && isset($attr['NAS-Identifier']) && isset($attr['Acct-Session-Id']))) {
+            return false;
+        }
+        if (self::bin2ip($attr['NAS-IP-Address']) != $sourceIp) {
+            return false;
+        }
+//        if (isset($this->serverCache[$sourceIp . $attr['NAS-Identifier']]) &&
+//            $this->serverCache[$sourceIp . $attr['NAS-Identifier']]['status'] == 0 &&
+//            $this->serverCache[$sourceIp . $attr['NAS-Identifier']]['time'] + 60 > time()
+//        ) {
+//            $secret = $this->serverCache[$sourceIp . $attr['NAS-Identifier']]['secret'];
+//            return true;
+//        }
+        if ($row = ServerModel::exist(['name' => $attr['NAS-Identifier'], 'ip' => $sourceIp])) {
+            if ($row['status'] == 0) {
+                $secret = $row['secret'];
+                $server = $row;
+//                $this->serverCache[$sourceIp . $attr['NAS-Identifier']] = $row;
+//                $this->serverCache[$sourceIp . $attr['NAS-Identifier']]['secret'] = $secret;
+//                $this->serverCache[$sourceIp . $attr['NAS-Identifier']]['time'] = time();
+                return true;
+            }
+        }
+        return false;
+    }
 
+
+    /**
+     * 计费
+     * @param array $attr
+     * @return int
+     */
     public function account(array $attr): int {
         if (isset($attr['Acct-Status-Type'])) {
             $atype = unpack('Nast', $attr['Acct-Status-Type']);
@@ -125,21 +186,28 @@ class radius {
         return 3;
     }
 
-    public function log($msg) {
-        echo "$msg\t" . date('Y/m/d H:i:s') . "\n";
+    /**
+     * 输出日志
+     * @param $msg
+     */
+    public function log($msg, $client = ['address' => '']) {
+        echo "$msg\tip:{$client['address']}\t" . date('Y/m/d H:i:s') . "\n";
     }
 
     /**
      * 验证账号
+     * @param string $secret
      * @param array $attr
+     * @param $Authenticator
+     * @param array $server
      * @return int
      */
-    public function authUser(array $attr, $Authenticator): int {
+    public function authUser(string $secret, array $attr, $Authenticator, array $server): int {
         if (isset($attr['User-Name'])) {
             //有账号密码
             if (isset($attr['User-Password'])) {
                 //User-Password
-                $passwd = $this->decode_pap_passwd($attr['User-Password'], $Authenticator);
+                $passwd = $this->decode_pap_passwd($attr['User-Password'], $Authenticator, $secret);
                 $vmodel = new LoginVerifyModel(['user' => $attr['User-Name'], 'passwd' => $passwd]);
                 if ($vmodel->__check()) {
                     $umodel = new UserModel();
@@ -152,17 +220,26 @@ class radius {
                         $ugmodel = new UserGroupModel();
                         $success = AuthController::auth(static::authId, $ugmodel->getUserGroup($row['uid']));
                         if ($success) {
+                            //验证成功,在数据库计费表中增加一条记录
+                            $accountModel = new AccountModel();
+                            //验证在线个数
+                            if ($accountModel->onlineNumber($row['uid']) >= 1) {
+                                return 3;
+                            }
+                            if (!$accountModel->addAccount([
+                                'session' => $attr['Acct-Session-Id'], 'uid' => $row['uid'],
+                                'server_id' => $server['server_id'], 'name' => $server['name'], 'ip' => $server['ip'],
+                                'beg_time' => time()
+                            ])) {
+                                return 3;
+                            }
                             return 2;
                         }
-                        return 3;
                     }
                 }
-                return 3;
             } else if (isset($attr['CHAP-Password'])) {
-                //CHAP-Password,密码必须明文储存,暂时放着,需要支持Access-Challeng
-                return 3;
-            } else {
-                return 3;
+                //CHAP-Password,CHAP验证密码必须明文储存,暂时放着,需要支持Access-Challeng
+                //对于现在的OpenVpn没打算实现这个,也不需要实现
             }
         }
         return 3;
@@ -187,9 +264,9 @@ class radius {
      * @param string $Authenticator
      * @return string
      */
-    public function decode_pap_passwd(string $bin, string $Authenticator): string {
+    public function decode_pap_passwd(string $bin, string $Authenticator, string $secret): string {
         $passwd = '';
-        $S = $this->secret_key;
+        $S = $secret;
         $len = strlen($bin);
         //b1 = MD5(S + RA)
         $hash_b = md5($S . $Authenticator, true);
@@ -225,7 +302,7 @@ class radius {
      * @param array $attr
      * @return string
      */
-    public function pack(int $code, int $identifier, string $reqAuthenticator, array $attr = []): string {
+    public function pack(string $secret, int $code, int $identifier, string $reqAuthenticator, array $attr = []): string {
         $attr_bin = '';
         foreach ($attr as $key => $value) {
             $attr_bin .= $this->pack_attr($key, $value);
@@ -235,7 +312,7 @@ class radius {
         $send = pack('ccna16',
                 $code, $identifier, $len,
                 md5(chr($code) . chr($identifier) . pack('n', $len) .
-                    $reqAuthenticator . $attr_bin . $this->secret_key, true)
+                    $reqAuthenticator . $attr_bin . $secret, true)
             ) . $attr_bin;
         return $send;
     }
@@ -314,7 +391,6 @@ class radius {
         $server->addListener('0.0.0.0', $this->config['account_port'], SWOOLE_SOCK_UDP);
         $server->on('Packet', array($this, 'onPacket'));
         $this->server = $server;
-        $this->secret_key = $this->config['secret'];
         //服务器启动,线程堵塞...
         $server->start();
     }

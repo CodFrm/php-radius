@@ -10,7 +10,7 @@ class RadiusTest extends TestCase {
 
 
     public function testMd5(){
-        echo md5("ha");
+        echo substr(b);
         echo md5("ha\x0");
     }
 }
