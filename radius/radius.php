@@ -90,16 +90,13 @@ class radius {
             return;
         }
         $code = 0;
-        $secret = '';
-        $server = [];
-        print_r($attr);
-        if ($this->verifyServer($attr, $clientInfo['address'], $secret, $server)) {
+        if ($server = $this->verifyServer($attr, $clientInfo['address'])) {
             switch ($struct['code']) {
                 case 1:
                     {
                         //Access-Request 接收到请求,需要处理账号密码信息,然后返回
                         $this->log("Access-Request 认证请求", $clientInfo);
-                        $code = $this->authUser($secret, $attr, $struct['authenticator'], $server);
+                        $code = $this->authUser($server, $attr, $struct['authenticator']);
                         break;
                     }
                 case 4:
@@ -121,7 +118,7 @@ class radius {
             $this->log("服务器验证未通过", $clientInfo);
         }
         $serv->sendto($clientInfo['address'], $clientInfo['port'],
-            $this->pack($secret, $code, $struct['identifier'], $struct['authenticator']), $clientInfo['server_socket']
+            $this->pack($server['secret'], $code, $struct['identifier'], $struct['authenticator']), $clientInfo['server_socket']
         );
         return;
     }
@@ -130,10 +127,9 @@ class radius {
      * 验证服务器是否正确/可用
      * @param array $attr
      * @param string $sourceIp
-     * @param string $secret
-     * @return bool
+     * @return array|bool
      */
-    public function verifyServer(array $attr, string $sourceIp, string &$secret, array $server = []): bool {
+    public function verifyServer(array $attr, string $sourceIp) {
         if (!(isset($attr['NAS-IP-Address']) && isset($attr['NAS-Identifier']) && isset($attr['Acct-Session-Id']))) {
             return false;
         }
@@ -149,12 +145,11 @@ class radius {
 //        }
         if ($row = ServerModel::exist(['name' => $attr['NAS-Identifier'], 'ip' => $sourceIp])) {
             if ($row['status'] == 0) {
-                $secret = $row['secret'];
-                $server = $row;
+//                $secret = $row['secret'];
 //                $this->serverCache[$sourceIp . $attr['NAS-Identifier']] = $row;
 //                $this->serverCache[$sourceIp . $attr['NAS-Identifier']]['secret'] = $secret;
 //                $this->serverCache[$sourceIp . $attr['NAS-Identifier']]['time'] = time();
-                return true;
+                return $row;
             }
         }
         return false;
@@ -167,8 +162,12 @@ class radius {
      * @return int
      */
     public function account(array $attr, array $server): int {
-        $account_id = 0;
-        if (!$account_id = $this->verifyAccount($attr, $server)) {
+        $account_row = 0;
+        if (!$account_row = $this->verifyAccount($attr, $server)) {
+            return 3;
+        }
+        //验证时间等信息
+        if ($account_row['end_time'] != 0) {
             return 3;
         }
         if (isset($attr['Acct-Status-Type'])) {
@@ -177,14 +176,19 @@ class radius {
             switch ($atype['ast']) {
                 case 1:
                     {
+                        //只允许10秒的延期
+                        if ($account_row['beg_time'] + 10 < time()) {
+                            return 3;
+                        }
                         //开始计费,更新数据库中的记录
                         $client_ip = '';
                         if (isset($attr['Framed-IP-Address'])) {
                             $client_ip = self::bin2ip($attr['Framed-IP-Address']);
                         }
-                        $accountModel->updateAccount($account_id, [
+                        $accountModel->updateAccount($account_row['account_id'], [
                             'client_ip' => $client_ip
                         ]);
+                        $accountModel->deleteInvalidRecord();
                         return 5;
                     }
                 case 2:
@@ -192,10 +196,12 @@ class radius {
                         //结束计费
                         $data = ['end_time' => time()];
                         if (isset($attr['Acct-Input-Octets']) && isset($attr['Acct-Output-Octets'])) {
-                            $data['input_octets'] = $attr['Acct-Input-Octets'];
-                            $data['output_octets'] = $attr['Acct-Output-Octets'];
+                            $tmp = unpack('Naio', $attr['Acct-Input-Octets']);
+                            $data['input_octets'] = $tmp['aio'];
+                            $tmp = unpack('Naoo', $attr['Acct-Output-Octets']);
+                            $data['output_octets'] = $tmp['aoo'];
                         }
-                        $accountModel->updateAccount($account_id, $data);
+                        $accountModel->updateAccount($account_row['account_id'], $data);
                         return 5;
                     }
             }
@@ -203,7 +209,13 @@ class radius {
         return 3;
     }
 
-    public function verifyAccount(array $attr, array $server): int {
+    /**
+     * 验证计费
+     * @param array $attr
+     * @param array $server
+     * @return array|int
+     */
+    public function verifyAccount(array $attr, array $server) {
         $accountModel = new AccountModel();
         $userModel = new UserModel();
         $user = [];
@@ -211,10 +223,10 @@ class radius {
             return 0;
         }
         //对session验证,之前需要获取到用户的信息
-        if (!$account_id = $accountModel->verifySession($user['uid'], $attr['Acct-Session-Id'], $server['server_id'])) {
+        if (!$row = $accountModel->verifySession($user['uid'], $attr['Acct-Session-Id'], $server['server_id'])) {
             return 0;
         }
-        return $account_id;
+        return $row;
     }
 
     /**
@@ -227,18 +239,17 @@ class radius {
 
     /**
      * 验证账号
-     * @param string $secret
+     * @param array $server
      * @param array $attr
      * @param $Authenticator
-     * @param array $server
      * @return int
      */
-    public function authUser(string $secret, array $attr, $Authenticator, array $server): int {
+    public function authUser(array $server, array $attr, $Authenticator): int {
         if (isset($attr['User-Name'])) {
             //有账号密码
             if (isset($attr['User-Password'])) {
                 //User-Password
-                $passwd = $this->decode_pap_passwd($attr['User-Password'], $Authenticator, $secret);
+                $passwd = $this->decode_pap_passwd($attr['User-Password'], $Authenticator, $server['secret']);
                 $vmodel = new LoginVerifyModel(['user' => $attr['User-Name'], 'passwd' => $passwd]);
                 if ($vmodel->__check()) {
                     $umodel = new UserModel();
@@ -293,6 +304,7 @@ class radius {
      * 解码pap密码
      * @param string $bin
      * @param string $Authenticator
+     * @param string $secret
      * @return string
      */
     public function decode_pap_passwd(string $bin, string $Authenticator, string $secret): string {

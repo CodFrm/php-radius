@@ -69,17 +69,25 @@ class AccountModel extends DbModel {
      * @param $uid
      * @param $session
      * @param $server_id
-     * @return bool
+     * @return array|int
      */
-    public function verifySession($uid, $session): int {
-        $row = $this->db()->where('uid', $uid)->where('session', $session)->where('server_id', $server_id);
+    public function verifySession($uid, $session, $server_id) {
+        $row = $this->db()->where('uid', $uid)
+            ->where('session', $session)
+            ->where('server_id', $server_id)->find();
         if ($row) {
-            if ($row['end_time'] != 0) {
-                return 0;
-            }
-            return $row['account_id'];
+            return $row;
         }
         return 0;
     }
 
+    /**
+     * 删除无效记录
+     * @return int
+     */
+    public function deleteInvalidRecord(): int {
+        return $this->db()->where('end_time', 0)
+            ->where('client_ip', '')
+            ->where('beg_time', '<', time() - 120)->delete();
+    }
 }
