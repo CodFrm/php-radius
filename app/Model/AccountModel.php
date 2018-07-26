@@ -41,6 +41,16 @@ class AccountModel extends DbModel {
     }
 
     /**
+     * 更新记录
+     * @param int $id
+     * @param array $data
+     * @return int
+     */
+    public function updateAccount(int $id, array $data): int {
+        return $this->db()->where('account_id', $id)->update($data);
+    }
+
+    /**
      * 在线数量
      * @param int $uid
      * @return int
@@ -52,6 +62,24 @@ class AccountModel extends DbModel {
         }
         $row = $this->db->find();
         return $row['count(*)'];
+    }
+
+    /**
+     * 验证session
+     * @param $uid
+     * @param $session
+     * @param $server_id
+     * @return bool
+     */
+    public function verifySession($uid, $session): int {
+        $row = $this->db()->where('uid', $uid)->where('session', $session)->where('server_id', $server_id);
+        if ($row) {
+            if ($row['end_time'] != 0) {
+                return 0;
+            }
+            return $row['account_id'];
+        }
+        return 0;
     }
 
 }

@@ -9,8 +9,7 @@ class LoginVerifyModel extends VerifyModel {
 
     /**
      * @verify empty 用户名不能为空
-     * @verify length 2,10 用户名不符合规则(2-10个字符)
-     * @verify regex /^(?=.*[a-zA-Z])[\w]+$/ 用户名格式不正确,必须包含一个字母
+     * @verify func user
      * @var string
      */
     public $user;
@@ -23,5 +22,18 @@ class LoginVerifyModel extends VerifyModel {
      */
     public $passwd;
 
-
+    public function user($user) {
+        if (strpos($user, '@') > 1) {
+            //邮箱验证
+            if (preg_match('/^\w+([-+.]\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/', $user)) {
+                return true;
+            }
+            return '邮箱格式不正确';
+        } else {
+            if (preg_match('/^(?=.*[a-zA-Z])[\w]{1,10}$/', $user)) {
+                return true;
+            }
+            return '用户名格式不正确';
+        }
+    }
 }

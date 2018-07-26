@@ -142,4 +142,13 @@ class UserModel extends DbModel {
         $row = Db::table(static::table)->where('reg_ip', $ip)->order('reg_time')->find();
         return $row;
     }
+
+    /**
+     * 通过uid/用户名/邮箱获取一个用户信息
+     * @param $user
+     * @return array|bool
+     */
+    public function user2msg($user) {
+        return $this->db()->where('uid', $user)->_or()->where('user', $user)->_or()->where('email', $user)->find();
+    }
 }

@@ -106,7 +106,7 @@ class radius {
                     {
                         //Accounting-Request 计费请求
                         $this->log("Accounting-Request 计费请求", $clientInfo);
-                        $code = $this->account($attr);
+                        $code = $this->account($attr, $server);
                         break;
                     }
                 default:
@@ -166,24 +166,55 @@ class radius {
      * @param array $attr
      * @return int
      */
-    public function account(array $attr): int {
+    public function account(array $attr, array $server): int {
+        $account_id = 0;
+        if (!$account_id = $this->verifyAccount($attr, $server)) {
+            return 3;
+        }
         if (isset($attr['Acct-Status-Type'])) {
             $atype = unpack('Nast', $attr['Acct-Status-Type']);
+            $accountModel = new AccountModel();
             switch ($atype['ast']) {
                 case 1:
                     {
-                        //开始计费,在数据库中加入记录
+                        //开始计费,更新数据库中的记录
+                        $client_ip = '';
+                        if (isset($attr['Framed-IP-Address'])) {
+                            $client_ip = self::bin2ip($attr['Framed-IP-Address']);
+                        }
+                        $accountModel->updateAccount($account_id, [
+                            'client_ip' => $client_ip
+                        ]);
                         return 5;
-                        break;
                     }
                 case 2:
                     {
                         //结束计费
-                        break;
+                        $data = ['end_time' => time()];
+                        if (isset($attr['Acct-Input-Octets']) && isset($attr['Acct-Output-Octets'])) {
+                            $data['input_octets'] = $attr['Acct-Input-Octets'];
+                            $data['output_octets'] = $attr['Acct-Output-Octets'];
+                        }
+                        $accountModel->updateAccount($account_id, $data);
+                        return 5;
                     }
             }
         }
         return 3;
+    }
+
+    public function verifyAccount(array $attr, array $server): int {
+        $accountModel = new AccountModel();
+        $userModel = new UserModel();
+        $user = [];
+        if (!(isset($attr['User-Name']) && $user = $userModel->user2msg($attr['User-Name']))) {
+            return 0;
+        }
+        //对session验证,之前需要获取到用户的信息
+        if (!$account_id = $accountModel->verifySession($user['uid'], $attr['Acct-Session-Id'], $server['server_id'])) {
+            return 0;
+        }
+        return $account_id;
     }
 
     /**
