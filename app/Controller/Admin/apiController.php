@@ -7,6 +7,7 @@ use App\ErrorCode;
 use App\Model\Admin\AddUserGroupVerifyModel;
 use App\Model\Admin\AddUserVerifyModel;
 use App\Model\Admin\UpdateUserVerifyModel;
+use App\Model\ConfigModel;
 use App\Model\GroupModel;
 use App\Model\ServerModel;
 use App\Model\UserGroupModel;
@@ -264,5 +265,22 @@ class apiController extends adminAuthController {
                 }
         }
         return new ErrorCode(-1, '系统错误');
+    }
+
+    private function setting() {
+        return 'error action';
+    }
+
+    /**
+     * 获取设置
+     * @return ErrorCode
+     */
+    public function getSetting() {
+        $model = new ConfigModel();
+        $config = [
+            'online_num' => $model->getConfigVal('online_num'),
+            'reg_interval' => $model->getConfigVal('reg_interval')
+        ];
+        return new ErrorCode(0, 'success', ['config' => $config]);
     }
 }
