@@ -13,6 +13,7 @@ namespace Radius;
 
 use App\Controller\AuthController;
 use App\Model\AccountModel;
+use App\Model\ConfigModel;
 use App\Model\LoginVerifyModel;
 use App\Model\ServerModel;
 use App\Model\UserGroupModel;
@@ -42,11 +43,14 @@ class radius {
      * 服务器缓存
      * @var array
      */
-//    public $serverCache = [];
+    public $serverCache = [];
+
 
     public function __construct(string $path) {
         $configPath = $path . '/config/swoole_config.php';
         $this->config = include $configPath;
+        $configModel = new ConfigModel();
+        $this->serverCache['online_num'] = $configModel->getConfigVal('online_num');
     }
 
     public static $ATTR_TYPE = [
@@ -265,7 +269,7 @@ class radius {
                             //验证成功,在数据库计费表中增加一条记录
                             $accountModel = new AccountModel();
                             //验证在线个数
-                            if ($accountModel->onlineNumber($row['uid']) >= 1) {
+                            if ($accountModel->onlineNumber($row['uid']) >= $this->serverCache['online_num']) {
                                 return 3;
                             }
                             if (!$accountModel->addAccount([

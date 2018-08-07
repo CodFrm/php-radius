@@ -52,7 +52,8 @@ class RegisterVerifyModel extends VerifyModel {
         /** @var Request $req */
         $req = app(Request::class);
         if ($row = UserModel::getIpLastReg($req->getip())) {
-            if ($row['reg_time'] + 3600 > time()) {
+            $model = new ConfigModel();
+            if ($row['reg_time'] + $model->getConfigVal('reg_interval') > time()) {
                 return '注册时间间隔过短';
             }
         }

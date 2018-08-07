@@ -43,6 +43,6 @@ class ConfigModel extends DbModel {
      */
     public function setConfigVal($key, $val): int {
         $this->cacheValue[$key] = $val;
-        return $this->db()->insert_duplicate(['config_key' => $key, 'config_val' => $val]);
+        return $this->db()->insert_duplicate(['config_key' => $key, 'config_value' => $val]);
     }
 }

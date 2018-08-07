@@ -14,7 +14,6 @@ use App\Model\UserGroupModel;
 use App\Model\UserModel;
 use App\Model\Verify\AddServerModel;
 use App\Model\Verify\UpdateServerModel;
-use Grpc\Server;
 use HuanL\Core\App\Controller\ApiController as RestfulController;
 use HuanL\Core\Facade\Db;
 use HuanL\Request\Request;
@@ -282,5 +281,16 @@ class apiController extends adminAuthController {
             'reg_interval' => $model->getConfigVal('reg_interval')
         ];
         return new ErrorCode(0, 'success', ['config' => $config]);
+    }
+
+    /**
+     * 修改设置
+     * @return ErrorCode
+     */
+    public function putSetting() {
+        $model = new ConfigModel();
+        $model->setConfigVal('online_num', $_POST['online_num']);
+        $model->setConfigVal('reg_interval', $_POST['reg_interval']);
+        return new ErrorCode(0, 'success');
     }
 }
