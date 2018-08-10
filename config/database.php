@@ -8,7 +8,6 @@ return [
     'db' => 'php-radius',
     'port' => 3306,
     'param' => [
-        'charset' => 'utf8',
-        PDO::ATTR_PERSISTENT => true
+        'charset' => 'utf8'
     ]
 ];

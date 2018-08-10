@@ -5,7 +5,7 @@ return [
     /**
      * 调试模式 true或者false
      */
-    'debug' => false,
+    'debug' => true,
 
     /**
      * 网页编码
