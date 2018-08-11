@@ -9,9 +9,9 @@ use HuanL\Request\Request;
 
 class adminAuthController extends AuthController {
 
-    protected const authIdList = [];
+    public const authIdList = [];
 
-    protected const controllerAuthId = 1;
+    public const controllerAuthId = 1;
 
     public function __construct(Request $request) {
         parent::__construct($request);
