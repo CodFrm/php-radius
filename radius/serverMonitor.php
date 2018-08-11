@@ -85,6 +85,7 @@ class serverMonitor {
         $ret['disk'] = $this->getDiskInfo();
         $ret['mem'] = $this->getMemInfo();
         $ret['network'] = $this->getNetworkInfo();
+        $ret['load'] = $this->getSysLoad();
         $ret['time'] = time();
         return $ret;
     }
@@ -115,8 +116,8 @@ class serverMonitor {
      * @return array
      */
     public function getSysLoad(): array {
-
-        return [];
+        $info = file_get_contents("/proc/loadavg");
+        return explode(' ', $info);
     }
 
     /**

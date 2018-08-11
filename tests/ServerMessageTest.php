@@ -19,12 +19,12 @@ echo "\n";
 //echo "\n";
 //print_r(file_get_contents("/proc/meminfo"));
 //echo "\n";
-$info=file_get_contents("/proc/net/dev");
-preg_match_all('/(\w+):(.*?)[\r\n]/',$info,$match);
-print_r($match);
-echo "\n";
-//print_r(file_get_contents("/proc/loadavg"));
+//$info=file_get_contents("/proc/net/dev");
+//preg_match_all('/(\w+):(.*?)[\r\n]/',$info,$match);
+//print_r($match);
 //echo "\n";
+print_r(file_get_contents("/proc/loadavg"));
+echo "\n";
 //$info = file_get_contents("/proc/stat");
 //print_r($info);
 //100 *(user + nice + system)/(user + nice + system + idle)
