@@ -209,11 +209,16 @@ class apiController extends adminAuthController {
         return 'error action';
     }
 
-    public function getServer(ServerModel $userModel, $page = 1) {
+    public function getServer(ServerModel $userModel, $page = 1, $simple = false) {
         $page = $page ?? 1;
         $userModel->db()->where('status in (0,1)');
         $total = 0;
-        $rows = $userModel->pagination($page, ['server_id', 'name', 'ip', 'config', 'secret', 'status'], 20, $total);
+        if ($simple) {
+            $fields = ['server_id', 'name', 'ip', 'config', 'secret', 'status'];
+        } else {
+            $fields = ['name', 'ip', 'secret'];
+        }
+        $rows = $userModel->pagination($page, $fields, 20, $total);
         return ['code' => 0, 'msg' => 'success', 'rows' => $rows, 'total' => $total];
     }
 
@@ -293,4 +298,5 @@ class apiController extends adminAuthController {
         $model->setConfigVal('reg_interval', $_POST['reg_interval']);
         return new ErrorCode(0, 'success');
     }
+
 }
