@@ -209,11 +209,18 @@ class apiController extends adminAuthController {
         return 'error action';
     }
 
-    public function getServer(ServerModel $userModel, $page = 1, $simple = false) {
+    /**
+     * 获取服务器信息
+     * @param ServerModel $userModel
+     * @param int $page
+     * @param bool $simple
+     * @return array
+     */
+    public function getServer(ServerModel $userModel, $page = 1, $simple = true) {
         $page = $page ?? 1;
         $userModel->db()->where('status in (0,1)');
         $total = 0;
-        if ($simple) {
+        if ($simple === true) {
             $fields = ['server_id', 'name', 'ip', 'config', 'secret', 'status'];
         } else {
             $fields = ['name', 'ip', 'secret'];
@@ -222,6 +229,12 @@ class apiController extends adminAuthController {
         return ['code' => 0, 'msg' => 'success', 'rows' => $rows, 'total' => $total];
     }
 
+    /**
+     * 添加服务器
+     * @param AddServerModel $addServerModel
+     * @param ServerModel $serverModel
+     * @return ErrorCode
+     */
     public function postServer(AddServerModel $addServerModel, ServerModel $serverModel) {
         $addServerModel->setCheckData($_POST);
         if ($addServerModel->__check()) {
@@ -233,6 +246,12 @@ class apiController extends adminAuthController {
         return new ErrorCode(-1, $addServerModel->getLastError());
     }
 
+    /**
+     * 修改服务器
+     * @param UpdateServerModel $updateServerModel
+     * @param ServerModel $serverModel
+     * @return ErrorCode
+     */
     public function putServer(UpdateServerModel $updateServerModel, ServerModel $serverModel) {
         $updateServerModel->setCheckData($_POST);
         if ($updateServerModel->__check()) {
@@ -244,6 +263,11 @@ class apiController extends adminAuthController {
         return new ErrorCode(-1, $updateServerModel->getLastError());
     }
 
+    /**
+     * 删除服务器
+     * @param ServerModel $serverModel
+     * @return ErrorCode|string
+     */
     public function deleteServer(ServerModel $serverModel) {
         if (!isset($_POST['server_id'])) {
             return 'error action';
@@ -297,6 +321,16 @@ class apiController extends adminAuthController {
         $model->setConfigVal('online_num', $_POST['online_num']);
         $model->setConfigVal('reg_interval', $_POST['reg_interval']);
         return new ErrorCode(0, 'success');
+    }
+
+    /**
+     * 获取系统信息
+     * @return ErrorCode
+     */
+    public function sysmsg(): ErrorCode {
+        $usercount = Db::table('user')->count();
+        $server = Db::table('server')->where('status', 0)->count();
+        return new ErrorCode(0, 'success', ['user' => $usercount, 'server' => $server]);
     }
 
 }

@@ -78,7 +78,7 @@ class TokenModel extends DbModel {
     public function deleteToken(int $uid, int $type, int $expire = 0): int {
         $where = ['uid' => $uid, 'type' => $type];
         if ($expire != 0) {
-            $where[] = ['expire', '<', $expire];
+            $where[] = ['time', '<', time() - $expire];
         }
         return $this->db()->where($where)->delete();
     }
