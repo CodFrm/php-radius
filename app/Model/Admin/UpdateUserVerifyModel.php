@@ -42,6 +42,9 @@ class UpdateUserVerifyModel extends VerifyModel {
      */
     public $email;
 
+    /**
+     * @var string
+     */
     public $user;
 
     public function email($email) {

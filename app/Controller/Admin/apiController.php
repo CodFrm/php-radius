@@ -328,7 +328,7 @@ class apiController extends adminAuthController {
      * @return ErrorCode
      */
     public function sysmsg(): ErrorCode {
-        $usercount = Db::table('user')->count();
+        $usercount = Db::table('users')->count();
         $server = Db::table('server')->where('status', 0)->count();
         return new ErrorCode(0, 'success', ['user' => $usercount, 'server' => $server]);
     }
