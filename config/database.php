@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'host' => '192.168.1.10',
+    'host' => 'localhost',
     'user' => 'root',
     'passwd' => '',
     'prefix' => 'pr_',

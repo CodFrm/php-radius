@@ -8,7 +8,6 @@ require 'vendor/autoload.php';
 $app = new HuanL\Core\Application(
     realpath(__DIR__)
 );
-$app->run();
 //需要将框架运行起来才能使swoole里的一些模型之类的跑起来
 $pid = [];
 if (in_array('radius', $argv)) {

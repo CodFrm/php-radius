@@ -18,8 +18,6 @@ use App\Model\LoginVerifyModel;
 use App\Model\ServerModel;
 use App\Model\UserGroupModel;
 use App\Model\UserModel;
-use HuanL\Db\Driver\MySQL\MySQLDBConnect;
-use HuanL\Db\SQLDb;
 use \swoole_server;
 
 class radius {
