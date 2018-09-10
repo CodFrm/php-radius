@@ -13,6 +13,7 @@ namespace App\Model;
 
 
 use HuanL\Core\App\Model\DbModel;
+use HuanL\Core\Facade\Db;
 
 class AccountModel extends DbModel {
 
@@ -89,5 +90,13 @@ class AccountModel extends DbModel {
         return $this->db()->where('end_time', 0)
             ->where('client_ip', '')
             ->where('beg_time', '<', time() - 120)->delete();
+    }
+
+    /**
+     * 重置记录
+     * @return int
+     */
+    public static function resetRecord() {
+        return Db::table(static::table)->where('end_time', 0)->update(['end_time' => time()]);
     }
 }

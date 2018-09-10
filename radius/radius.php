@@ -49,6 +49,7 @@ class radius {
         $this->config = include $configPath;
         $configModel = new ConfigModel();
         $this->serverCache['online_num'] = $configModel->getConfigVal('online_num');
+        AccountModel::resetRecord();
     }
 
     public static $ATTR_TYPE = [
