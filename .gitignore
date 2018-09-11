@@ -3,5 +3,4 @@
 composer.lock
 config/swoole_config.php
 config/database.php
-database.php
 
