@@ -4,6 +4,7 @@
 namespace App\Controller\Admin;
 
 use App\ErrorCode;
+use App\Model\AccountModel;
 use App\Model\Admin\AddUserGroupVerifyModel;
 use App\Model\Admin\AddUserVerifyModel;
 use App\Model\Admin\UpdateUserVerifyModel;
@@ -333,4 +334,18 @@ class apiController extends adminAuthController {
         return new ErrorCode(0, 'success', ['user' => $usercount, 'server' => $server]);
     }
 
+    private function account() {
+        return 'error action';
+    }
+
+    public function getAccount(AccountModel $accountModel, $page = 1, $keydown = '') {
+        $page = $page ?? 1;
+        $accountModel->db('a')
+            ->join('users', 'b', 'a.uid=b.uid')
+            ->join('server', 'c', 'a.server_id=c.server_id');
+        $total = 0;
+        $fields = ['account_id', 'user', 'c.name' => 'server', 'beg_time' => 'time', 'end_time', 'input_octets', 'output_octets'];
+        $rows = $accountModel->pagination($page, $fields, 20, $total);
+        return ['code' => 0, 'msg' => 'success', 'rows' => $rows, 'total' => $total];
+    }
 }
