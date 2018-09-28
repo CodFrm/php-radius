@@ -66,14 +66,24 @@ class serverMonitor {
                 //获取服务器信息
                 $sendData = json_encode($this->getServerMsg());
                 //定时推送服务器消息
-                foreach ($this->client as $value) {
+                foreach ($this->cliPacketent as $value) {
                     $this->server->push($value, $sendData);
                 }
             });
         });
+        //监听与radius交互的另外一个UDP端口
+        $proxy = $this->server->addListener('0.0.0.0', 1814, SWOOLE_SOCK_UDP);
+        if (!$proxy) {
+            die('1814 proxy error');
+        }
+        $proxy->on('Packet', array($this, 'onPacket'));
         $this->server->start();
     }
 
+    public function onPacket(swoole_server $serv, string $data, array $clientInfo) {
+        //Todo:对一些是否真实在线的进行处理
+
+    }
 
     /**
      * 获取服务器信息

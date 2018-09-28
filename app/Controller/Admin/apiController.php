@@ -51,7 +51,7 @@ class apiController extends adminAuthController {
         $total = 0;
         if (isset($_GET['keyword']) && !empty($_GET['keyword'])) {
             $users->db->where('uid', $_GET['keyword'])
-                ->_or()->where('user', $_GET['keyword'])
+                ->_or()->where('user', 'like', "%{$_GET['keyword']}%")
                 ->_or()->where('email', $_GET['keyword'])
                 ->_or()->where('reg_ip', $_GET['keyword']);
         }
@@ -338,11 +338,17 @@ class apiController extends adminAuthController {
         return 'error action';
     }
 
-    public function getAccount(AccountModel $accountModel, $page = 1, $keydown = '') {
+    public function getAccount(AccountModel $accountModel, $page = 1, $keyword = '') {
         $page = $page ?? 1;
         $accountModel->db('a')
             ->join('users', 'b', 'a.uid=b.uid')
             ->join('server', 'c', 'a.server_id=c.server_id');
+        if ($keyword) {
+            $accountModel->db
+                ->where('a.uid', $keyword)
+                ->_or()->where('b.user', 'like', "%$keyword%")
+                ->_or()->where('c.name', 'like', "%$keyword%");
+        }
         $total = 0;
         $fields = ['account_id', 'user', 'c.name' => 'server', 'beg_time' => 'time', 'end_time', 'input_octets', 'output_octets'];
         $rows = $accountModel->pagination($page, $fields, 20, $total);

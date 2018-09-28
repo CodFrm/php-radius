@@ -57,7 +57,8 @@ class AccountModel extends DbModel {
      * @return int
      */
     public function onlineNumber(int $uid = 0): int {
-        $this->db()->field('count(*)')->where('end_time', 0)->where('client_ip', '<>', '');
+        $this->db()->field('count(*)')->where('end_time', 0)
+            ->where('isnull(client_ip)');
         if (!empty($uid)) {
             $this->db->where('uid', $uid);
         }

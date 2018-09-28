@@ -269,6 +269,7 @@ class radius {
                             $accountModel = new AccountModel();
                             //验证在线个数
                             if ($accountModel->onlineNumber($row['uid']) >= $this->serverCache['online_num']) {
+                                //TODO:验证是否确实在线
                                 return 3;
                             }
                             if (!$accountModel->addAccount([
@@ -436,6 +437,9 @@ class radius {
         $server = new swoole_server('0.0.0.0', $this->config['auth_port'], SWOOLE_BASE, SWOOLE_SOCK_UDP);
         $server->addListener('0.0.0.0', $this->config['account_port'], SWOOLE_SOCK_UDP);
         $server->on('Packet', array($this, 'onPacket'));
+        $server->set([
+            'worker_num' => 1
+        ]);
         $this->server = $server;
         //服务器启动,线程堵塞...
         $server->start();
