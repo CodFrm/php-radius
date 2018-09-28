@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\ErrorCode;
 use App\Model\LoginVerifyModel;
 use App\Model\RegisterVerifyModel;
+use App\Model\ServerModel;
 use App\Model\TokenModel;
 use App\Model\UserModel;
 use HuanL\Core\Facade\Db;
@@ -72,5 +73,16 @@ class indexController extends ViewController {
             return new ErrorCode(-1, '注册失败');
         }
         return new ErrorCode(-1, $regVerify->getLastError());
+    }
+
+    /**
+     * @route get /server
+     */
+    public function server() {
+        $server = new ServerModel();
+        $server->db()->where('status', 0);
+        return new ErrorCode(0, 'success', ['rows' => $server->pagination(0,
+            ['server_id', 'name', 'config']
+        )]);
     }
 }
