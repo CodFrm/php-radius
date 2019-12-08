@@ -3,7 +3,7 @@
 return [
     'host' => 'localhost',
     'user' => 'root',
-    'passwd' => 'zouqin123',
+    'passwd' => '',
     'prefix' => 'pr_',
     'db' => 'php-radius',
     'port' => 3306,
